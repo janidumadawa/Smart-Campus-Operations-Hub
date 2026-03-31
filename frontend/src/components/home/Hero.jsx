@@ -120,7 +120,7 @@ const Hero = () => {
             <div className="absolute bottom-0 left-0 w-full z-10">
                 {/* Orange wave layer */}
                 <svg
-                    className="w-full h-16 md:h-20 rotate-180"
+                    className="w-full h-16 md:h-22 rotate-180"
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 1200 120"
                     preserveAspectRatio="none"
@@ -132,7 +132,7 @@ const Hero = () => {
                 </svg>
                 {/* White wave layer on top */}
                 <svg
-                    className="w-full h-12 md:h-16 absolute bottom-0 left-0 rotate-180"
+                    className="w-full h-12 md:h-18 absolute bottom-0 left-0 rotate-180"
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 1200 120"
                     preserveAspectRatio="none"

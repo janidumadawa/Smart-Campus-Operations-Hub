@@ -34,24 +34,23 @@ const Navbar = ({ activeSection }) => {
             <nav className={`fixed top-6 left-0 right-0 z-50 transition-all duration-500 px-4 md:px-8`}>
                 <div className="max-w-7xl mx-auto">
                     {/* Navbar Container with Glassmorphism Effect */}
-<motion.div 
-    className={`
+                    <motion.div
+                        className={`
         rounded-2xl backdrop-blur-md transition-all duration-300
         ${scrolled
-            ? 'bg-gradient-to-r from-[#0A2342]/90 to-[#0A2342]/80 shadow-xl shadow-black/20 border border-[#F47C20]/30'
-            : 'bg-gradient-to-r from-[#0A2342]/80 to-[#0A2342]/70 shadow-lg shadow-black/10 border border-[#F47C20]/20'
-        }
+                                ? 'bg-gradient-to-r from-[#0A2342]/90 to-[#0A2342]/80 shadow-xl shadow-black/20 border border-[#F47C20]/30'
+                                : 'bg-gradient-to-r from-[#0A2342]/80 to-[#0A2342]/70 shadow-lg shadow-black/10 border border-[#F47C20]/20'
+                            }
     `}
-    animate={{ 
-        opacity: scrolled ? 0 : 1,
-        visibility: scrolled ? "hidden" : "visible"
-    }}
-    transition={{ duration: 0.3 }}
->
+                        animate={{
+                            opacity: scrolled ? 0 : 1,
+                            visibility: scrolled ? "hidden" : "visible"
+                        }}
+                        transition={{ duration: 0.3 }}
+                    >
                         <div className="container-custom">
                             {/* 3-column layout */}
-                            <div className="grid grid-cols-3 items-center h-16 md:h-20">
-
+                            <div className="flex items-center justify-between h-16 md:h-20">
                                 {/* LEFT: Logo */}
                                 <div className="flex justify-start">
                                     <Link to="/" className="flex items-center gap-2 group">
@@ -60,22 +59,16 @@ const Navbar = ({ activeSection }) => {
                                             alt="CampusFlow"
                                             className="h-12 w-auto object-contain transition-all duration-300 group-hover:scale-105"
                                         />
-                                        <span className={`hidden sm:inline font-bold text-xl transition-colors duration-300 ${scrolled ? 'text-[#0A2342]' : 'text-[#0A2342]'
-                                            }`}>
-                                        </span>
                                     </Link>
                                 </div>
 
-                                {/* CENTER: Nav Items */}
-                                <div className="hidden md:flex justify-center gap-8">
+                                {/* CENTER: Nav Items - Desktop Only */}
+                                <div className="hidden md:flex justify-center gap-8 flex-1">
                                     {navItems.map((item) => (
                                         <Link
                                             key={item.name}
                                             to={item.path}
-                                            className={`relative transition-all duration-300 font-medium text-white ${scrolled
-                                                ? 'text-white hover:text-[#F47C20]'
-                                                : 'text-white hover:text-[#F47C20]'
-                                                }`}
+                                            className={`relative transition-all duration-300 font-medium text-white hover:text-[#F47C20]`}
                                         >
                                             {item.name}
                                             {activeSection === item.name.toLowerCase() && (
@@ -89,64 +82,37 @@ const Navbar = ({ activeSection }) => {
                                     ))}
                                 </div>
 
-                                {/* RIGHT: Auth / User */}
-                                <div className="hidden md:flex justify-end gap-3">
-                                    {!isLoggedIn ? (
-                                        <>
-                                            <Link
-                                                to="/auth"
-                                                className="px-5 py-2 rounded-full font-semibold transition-all duration-300 border-2 border-[#F47C20] text-[#F47C20] hover:bg-[#F47C20] hover:text-white"
-                                            >
-                                                Login
-                                            </Link>
-                                            <Link
-                                                to="/auth/register"
-                                                className="px-5 py-2 rounded-full font-semibold transition-all duration-300 bg-[#F47C20] text-white hover:bg-[#E06A10] hover:shadow-lg"
-                                            >
-                                                Sign Up
-                                            </Link>
-                                        </>
-                                    ) : (
-                                        <div className="flex items-center gap-3">
-                                            <button className="relative p-2 rounded-full hover:bg-gray-100 transition-all duration-300">
-                                                <Bell className={`w-5 h-5 text-gray-700`} />
-                                                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
-                                            </button>
-
-                                            <div className="relative group">
-                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F47C20] to-[#E06A10] flex items-center justify-center text-white font-bold cursor-pointer shadow-md transition-all duration-300 group-hover:scale-105">
-                                                    JD
-                                                </div>
-
-                                                <div className="absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 border border-gray-100 overflow-hidden">
-                                                    <Link to="/profile" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-gray-800 font-medium transition-colors">
-                                                        <User className="w-4 h-4 text-gray-500" /> Profile
-                                                    </Link>
-                                                    <Link to="/settings" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-gray-800 font-medium transition-colors">
-                                                        <Settings className="w-4 h-4 text-gray-500" /> Settings
-                                                    </Link>
-                                                    <button
-                                                        onClick={handleLogout}
-                                                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-red-600 font-medium transition-colors"
-                                                    >
-                                                        <LogOut className="w-4 h-4" /> Logout
-                                                    </button>
-                                                </div>
+                                {/* RIGHT: Auth & Mobile Menu */}
+                                <div className="flex justify-end items-center gap-3">
+                                    {/* Desktop Auth Buttons */}
+                                    <div className="hidden md:flex gap-3">
+                                        {!isLoggedIn ? (
+                                            <>
+                                                <Link to="/auth" className="px-5 py-2 rounded-full font-semibold transition-all duration-300 border-2 border-[#F47C20] text-[#F47C20] hover:bg-[#F47C20] hover:text-white">
+                                                    Login
+                                                </Link>
+                                                <Link to="/auth/register" className="px-5 py-2 rounded-full font-semibold transition-all duration-300 bg-[#F47C20] text-white hover:bg-[#E06A10] hover:shadow-lg">
+                                                    Sign Up
+                                                </Link>
+                                            </>
+                                        ) : (
+                                            <div className="flex items-center gap-3">
+                                                {/* User menu content */}
                                             </div>
-                                        </div>
-                                    )}
-                                </div>
+                                        )}
+                                    </div>
 
-                                {/* MOBILE MENU BUTTON */}
-                                <div className="flex justify-end md:hidden">
+                                    {/* Mobile Menu Button */}
                                     <button
                                         onClick={() => setIsOpen(!isOpen)}
-                                        className="p-2 rounded-lg hover:bg-gray-100 transition-all duration-300"
+                                        className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-all duration-300"
                                     >
-                                        {isOpen ? <X className="w-6 h-6 text-gray-700" /> : <Menu className="w-6 h-6 text-gray-700" />}
+                                        {isOpen ?
+                                            <X className="w-6 h-6 text-white" /> :
+                                            <Menu className="w-6 h-6 text-white" />
+                                        }
                                     </button>
                                 </div>
-
                             </div>
                         </div>
                     </motion.div>

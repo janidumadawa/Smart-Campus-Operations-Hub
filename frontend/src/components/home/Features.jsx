@@ -49,8 +49,7 @@ const Features = () => {
         <div className="text-center mb-16">
           <span className="section-badge">Why should you choose us?</span>
           <h2 className="section-title text-[#0A2342] mb-6">
-            Powerful Features for
-            <span className="title-gradient"> Modern Campus</span>
+            Powerful Features for Modern Campus
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto text-lg font-medium">
             Everything you need to streamline university operations in one comprehensive single platform.

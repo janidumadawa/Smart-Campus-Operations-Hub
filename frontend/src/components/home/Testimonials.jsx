@@ -36,7 +36,7 @@ const Testimonials = () => {
   return (
     <section className="relative py-24 bg-white overflow-hidden">
       <div className="absolute bottom-150 left-0 w-full overflow-hidden leading-none z-10">
-        <svg
+        {/* <svg
           className="w-full h-12 md:h-16 rotate-180"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 1200 120"
@@ -44,9 +44,9 @@ const Testimonials = () => {
         >
           <path
             d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"
-            className="fill-[#000000]"
+            className="fill-[#00000]"
           ></path>
-        </svg>
+        </svg> */}
       </div>
       <div className="container-custom mt-12 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
