@@ -9,6 +9,9 @@ import Facilities from "./pages/facilities/Facilitiespage";
 import Bookings from "./pages/bookings/Bookingpage";
 import Tickets from "./pages/tickets/Ticketpage";
 
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+
 const queryClient = new QueryClient();
 
 function App() {
@@ -21,6 +24,9 @@ function App() {
           <Route path="/facilities" element={<Facilities />} />
           <Route path="/bookings" element={<Bookings />} />
           <Route path="/tickets" element={<Tickets />} />
+
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           {/* Add more routes as needed */}
         </Routes>
       </Router>

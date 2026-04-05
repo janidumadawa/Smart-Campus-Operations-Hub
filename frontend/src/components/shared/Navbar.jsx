@@ -88,10 +88,10 @@ const Navbar = ({ activeSection }) => {
                                     <div className="hidden md:flex gap-3">
                                         {!isLoggedIn ? (
                                             <>
-                                                <Link to="/auth" className="px-5 py-2 rounded-full font-semibold transition-all duration-300 border-2 border-[#F47C20] text-[#F47C20] hover:bg-[#F47C20] hover:text-white">
+                                                <Link to="/login" className="px-5 py-2 rounded-full font-semibold transition-all duration-300 border-2 border-[#F47C20] text-[#F47C20] hover:bg-[#F47C20] hover:text-white">
                                                     Login
                                                 </Link>
-                                                <Link to="/auth/register" className="px-5 py-2 rounded-full font-semibold transition-all duration-300 bg-[#F47C20] text-white hover:bg-[#E06A10] hover:shadow-lg">
+                                                <Link to="/register" className="px-5 py-2 rounded-full font-semibold transition-all duration-300 bg-[#F47C20] text-white hover:bg-[#E06A10] hover:shadow-lg">
                                                     Sign Up
                                                 </Link>
                                             </>
@@ -143,14 +143,14 @@ const Navbar = ({ activeSection }) => {
                                         {!isLoggedIn ? (
                                             <>
                                                 <Link
-                                                    to="/auth"
+                                                    to="/login"
                                                     onClick={() => setIsOpen(false)}
                                                     className="px-4 py-3 text-center text-[#F47C20] border-2 border-[#F47C20] rounded-xl font-semibold hover:bg-[#F47C20] hover:text-white transition-all duration-300"
                                                 >
                                                     Login
                                                 </Link>
                                                 <Link
-                                                    to="/auth/register"
+                                                    to="/register"
                                                     onClick={() => setIsOpen(false)}
                                                     className="px-4 py-3 text-center bg-[#F47C20] text-white rounded-xl font-semibold hover:bg-[#E06A10] transition-all duration-300"
                                                 >
