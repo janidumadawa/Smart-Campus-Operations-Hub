@@ -1,9 +1,10 @@
 // frontend/src/pages/auth/Login.jsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, LogIn } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import sliitBackground from '../../assets/sliit-image2.jpg';
 
 const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -39,8 +40,21 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            
+        <div className="relative min-h-screen overflow-hidden bg-slate-100">
+            <div className="absolute inset-0">
+                <img
+                    src={sliitBackground}
+                    alt="SLIIT campus"
+                    className="h-full w-full object-cover opacity-70"
+                />
+                <div className="absolute inset-0 bg-linear-to-b from-white/80 via-white/65 to-orange-50/75"></div>
+                <div className="absolute inset-x-0 bottom-0 h-52 bg-linear-to-t from-orange-100/75 to-transparent"></div>
+                <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-primary/15 blur-3xl"></div>
+                <div className="absolute -bottom-20 -right-16 h-80 w-80 rounded-full bg-sky-200/30 blur-3xl"></div>
+                <div className="absolute inset-0 opacity-[0.10] bg-[radial-gradient(#f47c20_1px,transparent_1px)] bg-size-[20px_20px]"></div>
+            </div>
+
+            <div className="relative z-10">
             {/* Reduced spacer */}
             <div className="h-16"></div>
 
@@ -51,12 +65,18 @@ const Login = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4 }}
-                        className="bg-white rounded-xl shadow-lg overflow-hidden"
+                        className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl shadow-primary/10 overflow-hidden border border-white/70"
                     >
                         {/* Header */}
-                        <div className="bg-[#F47C20] px-6 py-6 text-center">
-                            <div className="inline-flex items-center justify-center w-14 h-14 bg-white/20 rounded-full mb-3">
-                                <LogIn className="w-7 h-7 text-white" />
+                        <div className="bg-primary px-6 py-6 text-center">
+                            <div className="mb-3 flex items-center justify-center">
+                                    <div className="inline-flex items-center justify-center rounded-xl bg-slate-900/88 px-3 py-1.5 ring-1 ring-white/35 backdrop-blur-sm">
+                                    <img
+                                        src="/weblogo2.png"
+                                        alt="CampusFlow logo"
+                                            className="h-12 w-auto object-contain"
+                                    />
+                                </div>
                             </div>
                             <h2 className="text-xl font-bold text-white">Welcome Back</h2>
                             <p className="text-white/90 text-sm mt-1">Sign in to your CampusFlow account</p>
@@ -77,7 +97,7 @@ const Login = () => {
                                         value={formData.email}
                                         onChange={handleChange}
                                         required
-                                        className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#F47C20] focus:ring-1 focus:ring-orange-100 transition-all text-sm"
+                                        className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-orange-100 transition-all text-sm"
                                         placeholder="ITxxxxxxxx@my.sliit.lk"
                                     />
                                 </div>
@@ -96,7 +116,7 @@ const Login = () => {
                                         value={formData.password}
                                         onChange={handleChange}
                                         required
-                                        className="w-full pl-9 pr-9 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#F47C20] focus:ring-1 focus:ring-orange-100 transition-all text-sm"
+                                        className="w-full pl-9 pr-9 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-orange-100 transition-all text-sm"
                                         placeholder="Enter your password"
                                     />
                                     <button
@@ -120,13 +140,13 @@ const Login = () => {
                                         name="rememberMe"
                                         checked={formData.rememberMe}
                                         onChange={handleChange}
-                                        className="w-3.5 h-3.5 text-[#F47C20] border-gray-300 rounded focus:ring-[#F47C20]"
+                                        className="w-3.5 h-3.5 text-primary border-gray-300 rounded focus:ring-primary"
                                     />
                                     <span className="ml-2 text-xs text-gray-600">Remember me</span>
                                 </label>
                                 <Link 
                                     to="/forgot-password" 
-                                    className="text-xs text-[#F47C20] hover:text-[#E06A10] transition-colors"
+                                    className="text-xs text-primary hover:text-primary-dark transition-colors"
                                 >
                                     Forgot Password?
                                 </Link>
@@ -136,7 +156,7 @@ const Login = () => {
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="w-full bg-[#F47C20] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[#E06A10] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="w-full bg-primary text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-primary-dark transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 {isLoading ? (
                                     <>
@@ -193,7 +213,7 @@ const Login = () => {
                             <div className="mt-5 text-center">
                                 <p className="text-xs text-gray-600">
                                     Don't have an account?{' '}
-                                    <Link to="/auth/register" className="text-[#F47C20] font-semibold hover:text-[#E06A10] transition-colors">
+                                    <Link to="/register" className="text-primary font-semibold hover:text-primary-dark transition-colors">
                                         Sign up
                                     </Link>
                                 </p>
@@ -202,10 +222,11 @@ const Login = () => {
                     </motion.div>
 
                     {/* Footer Note */}
-                    <p className="text-center text-gray-500 text-xs mt-5">
+                    <p className="text-center text-gray-600 text-xs mt-5">
                         By signing in, you agree to our Terms of Service and Privacy Policy
                     </p>
                 </div>
+            </div>
             </div>
 
         </div>
