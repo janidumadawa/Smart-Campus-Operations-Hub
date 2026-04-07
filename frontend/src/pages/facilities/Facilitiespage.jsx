@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Navbar from '../../components/shared/Navbar';
 import Footer from '../../components/shared/Footer';
-
+import ResourcesCard from '../../components/facilities/resourcesCard';
 
 const Facilitiespage = () => {
     return (
@@ -10,7 +10,6 @@ const Facilitiespage = () => {
 
             {/* Hero Section */}
             <div className="relative -mt-24 pt-44 pb-24 bg-[#0A2342] overflow-hidden">
-
                 <div className="container-custom relative z-10 text-center">
                     <h1 className="text-5xl md:text-7xl font-black text-white mb-6 tracking-tight">
                         Faci<span className="text-[#F47C20]">lities</span>
@@ -23,24 +22,7 @@ const Facilitiespage = () => {
 
             <main>
                 <div className="container-custom py-16">
-                    <div className="text-center text-gray-500">
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                    </div>
+                    <ResourcesCard />
                 </div>
             </main>
 
@@ -49,4 +31,4 @@ const Facilitiespage = () => {
     );
 };
 
-export default Facilitiespage;  
+export default Facilitiespage;

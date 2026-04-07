@@ -1,10 +1,23 @@
+# Compiled files
 HELP.md
 target/
-.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-### STS ###
+# Environment variables (CRITICAL - NEVER commit!)
+.env
+.env.local
+.env.*.local
+!.env.template
+
+# Application properties with secrets
+**/application.properties
+!**/application.properties.template
+**/application-dev.properties
+**/application-prod.properties
+
+# STS (Spring Tool Suite)
 .apt_generated
 .classpath
 .factorypath
@@ -13,13 +26,14 @@ target/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
-.idea
+# IntelliJ IDEA
+.idea/
 *.iws
 *.iml
 *.ipr
+/out/
 
-### NetBeans ###
+# NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
@@ -29,5 +43,70 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### VS Code ###
+# VS Code
 .vscode/
+*.code-workspace
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Log files
+*.log
+*.log.gz
+logs/
+build.log
+run.log
+application.log
+
+# Maven
+.mvn/
+.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.properties
+mvnw
+mvnw.cmd
+
+# Docker
+*.pid
+Dockerfile
+docker-compose*.yml
+.docker/
+
+# Backup files
+*.bak
+*.backup
+*.orig
+*.old
+
+# Secret files
+*.p12
+*.pfx
+*.jks
+*.key
+*.pem
+*.crt
+.secrets/
+
+# Database
+*.db
+*.sqlite
+*.sql
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+.cache/
+
+# Application specific
+**/application-*.properties
+!**/application-template.properties
+!.mvn/wrapper/maven-wrapper.properties
