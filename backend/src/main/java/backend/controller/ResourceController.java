@@ -2,7 +2,6 @@
 package backend.controller;
 
 import backend.model.Resource;
-import backend.service.CloudinaryService;
 import backend.service.ResourceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -10,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/resources")
@@ -19,9 +17,6 @@ public class ResourceController {
 
     @Autowired
     private ResourceService resourceService;
-    
-    @Autowired
-    private CloudinaryService cloudinaryService;
 
     // GET all resources with pagination
     @GetMapping
@@ -53,20 +48,14 @@ public class ResourceController {
         
         System.out.println("Upload image request received for resource: " + id);
         
-        // Upload image to Cloudinary
-        Map<String, Object> uploadResult = cloudinaryService.uploadImage(image, "resources");
-        
-        // Get the public ID from Cloudinary response
-        String imagePublicId = (String) uploadResult.get("public_id");
-        
-        // Update resource with image public ID
+        // TODO: Implement image upload logic without Cloudinary
+        // For now, just return the existing resource
         Resource resource = resourceService.getResourceById(id);
         if (resource == null) {
             throw new RuntimeException("Resource not found with id: " + id);
         }
-        resource.setImagePublicId(imagePublicId);
         
-        return resourceService.createResource(resource);
+        return resource;
     }
 
     // Create sample resources

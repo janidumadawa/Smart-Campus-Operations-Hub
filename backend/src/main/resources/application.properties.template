@@ -3,10 +3,5 @@ spring.data.mongodb.uri=${MONGODB_URI}
 spring.data.mongodb.auto-index-creation=true
 spring.application.name=backend
 
-# Cloudinary Configuration
-cloudinary.cloud-name=${CLOUDINARY_CLOUD_NAME}
-cloudinary.api-key=${CLOUDINARY_API_KEY}
-cloudinary.api-secret=${CLOUDINARY_API_SECRET}
-
 # Server Configuration
 server.port=${SERVER_PORT:8080}

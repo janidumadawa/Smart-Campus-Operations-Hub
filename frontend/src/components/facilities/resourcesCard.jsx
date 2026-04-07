@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
 const ResourcesCard = () => {
-    const cloudName = 'smart-campus-hub'; // Cloudinary cloud name
     const [resources, setResources] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -9,7 +8,7 @@ const ResourcesCard = () => {
         fetch('http://localhost:8080/resources')
             .then(res => res.json())
             .then(data => {
-                setResources(data.content || []); // because it's a Page
+                setResources(data.content || []);
                 setLoading(false);
             })
             .catch(err => {
@@ -17,22 +16,6 @@ const ResourcesCard = () => {
                 setLoading(false);
             });
     }, []);
-
-    // Helper function to get Cloudinary image URL with optimizations
-    const getCloudinaryImage = (imagePublicId, options = {}) => {
-        if (!imagePublicId) return null;
-        
-        const cloudName = 'smart-campus-hub'; // Replace with your Cloudinary cloud name
-        const transformations = {
-            width: options.width || 400,
-            height: options.height || 300,
-            crop: options.crop || 'fill',
-            quality: options.quality || 'auto',
-            format: 'auto'
-        };
-        
-        return `https://res.cloudinary.com/${cloudName}/image/upload/${transformations.crop}/w_${transformations.width},h_${transformations.height},q_${transformations.quality},f_${transformations.format}/${imagePublicId}`;
-    };
 
     if (loading) {
         return (
@@ -57,14 +40,20 @@ const ResourcesCard = () => {
                     key={resource.id} 
                     className="group bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 border border-gray-100 flex flex-col"
                 >
-                    {/* Image Section with Cloudinary */}
+                    {/* Image Section */}
                     <div className="relative h-48 overflow-hidden bg-gray-100">
                         {resource.imagePublicId ? (
                             <img 
-                                src={getCloudinaryImage(resource.imagePublicId, { width: 500, height: 300 })}
+                                src={resource.imageUrl || resource.imagePublicId}
                                 alt={resource.name}
                                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                                 loading="lazy"
+                                onError={(e) => {
+                                    console.error('Image failed to load:', resource.imagePublicId);
+                                    e.target.onerror = null;
+                                    e.target.src = '';
+                                    e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#0A2342]/5 to-[#F47C20]/5"><svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg></div>';
+                                }}
                             />
                         ) : (
                             // Fallback placeholder image
@@ -79,10 +68,10 @@ const ResourcesCard = () => {
                         <div className="absolute top-3 right-3">
                             <span className={`
                                 px-2 py-1 rounded-full text-xs font-medium shadow-lg
-                                ${resource.status === 'Available' ? 'bg-green-500 text-white' : ''}
-                                ${resource.status === 'In Use' ? 'bg-yellow-500 text-white' : ''}
-                                ${resource.status === 'Maintenance' ? 'bg-red-500 text-white' : ''}
-                                ${!['Available', 'In Use', 'Maintenance'].includes(resource.status) ? 'bg-gray-500 text-white' : ''}
+                                ${resource.status === 'AVAILABLE' || resource.status === 'Available' ? 'bg-green-500 text-white' : ''}
+                                ${resource.status === 'IN_USE' || resource.status === 'In Use' ? 'bg-yellow-500 text-white' : ''}
+                                ${resource.status === 'OUT_OF_SERVICE' || resource.status === 'Maintenance' ? 'bg-red-500 text-white' : ''}
+                                ${!['AVAILABLE', 'Available', 'IN_USE', 'In Use', 'OUT_OF_SERVICE', 'Maintenance'].includes(resource.status) ? 'bg-gray-500 text-white' : ''}
                             `}>
                                 {resource.status}
                             </span>
