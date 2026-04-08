@@ -38,8 +38,8 @@ const Navbar = ({ activeSection }) => {
                         className={`
         rounded-2xl backdrop-blur-md transition-all duration-300
         ${scrolled
-                                ? 'bg-gradient-to-r from-[#0A2342]/90 to-[#0A2342]/80 shadow-xl shadow-black/20 border border-[#F47C20]/30'
-                                : 'bg-gradient-to-r from-[#0A2342]/80 to-[#0A2342]/70 shadow-lg shadow-black/10 border border-[#F47C20]/20'
+                                ? 'bg-gradient-to-r from-[#0A2342]/90 to-[#0A2342]/80 shadow-xl shadow-white/20 border border-[#F47C20]/30'
+                                : 'bg-gradient-to-r from-[#0A2342]/80 to-[#0A2342]/70 shadow-lg shadow-white/10 border border-[#F47C20]/20'
                             }
     `}
                         animate={{
