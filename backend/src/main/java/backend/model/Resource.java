@@ -1,7 +1,8 @@
-// backend\src\main\java\backend\model\Resource.java
 package backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "resources")
@@ -11,11 +12,14 @@ public class Resource {
     private String id;
 
     private String name;
-    private String type; // ROOM or EQUIPMENT
+    private String type;
     private String location;
     private int capacity;
-    private String status; // AVAILABLE or OUT_OF_SERVICE
-    private String imagePublicId; // Cloudinary image public ID (optional)
+    private String status;
+    private String imagePublicId;
+    
+    @Transient
+    private String imageUrl; // This won't be saved to DB
 
     // constructors
     public Resource() {}
@@ -84,5 +88,13 @@ public class Resource {
 
     public void setImagePublicId(String imagePublicId) {
         this.imagePublicId = imagePublicId;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

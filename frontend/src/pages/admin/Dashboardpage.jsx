@@ -1,5 +1,5 @@
 // frontend/src/pages/admin/Dashboardpage.jsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Package, 
@@ -7,19 +7,34 @@ import {
   Clock, 
   AlertCircle, 
   CheckCircle,
-  TrendingUp,
-  Users,
-  Wrench
+  Users
 } from 'lucide-react';
 
 const Dashboardpage = () => {
+  const [totalResources, setTotalResources] = useState('...');
+
+  useEffect(() => {
+    fetch('http://localhost:8080/resources?size=1')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.totalElements !== undefined) {
+          setTotalResources(data.totalElements.toString());
+        } else if (data && data.content) {
+          setTotalResources(data.content.length.toString());
+        }
+      })
+      .catch(err => console.error('Error fetching resources:', err));
+  }, []);
+
   const stats = [
-    { title: 'Total Resources', value: '124', icon: Package, color: '#F47C20', change: '+12%' },
-    { title: 'Active Bookings', value: '45', icon: Calendar, color: '#0A2342', change: '+8%' },
-    { title: 'Pending Bookings', value: '12', icon: Clock, color: '#F47C20', change: '-3%' },
-    { title: 'Open Tickets', value: '8', icon: AlertCircle, color: '#0A2342', change: '+2%' },
-    { title: 'Resolved Tickets', value: '156', icon: CheckCircle, color: '#F47C20', change: '+24%' },
-    { title: 'Active Users', value: '342', icon: Users, color: '#0A2342', change: '+15%' },
+    { title: 'Total Resources', value: totalResources, icon: Package, color: '#F47C20'},
+
+
+    { title: 'Active Bookings', value: '45', icon: Calendar, color: '#0A2342' },
+    { title: 'Pending Bookings', value: '12', icon: Clock, color: '#F47C20' },
+    { title: 'Open Tickets', value: '8', icon: AlertCircle, color: '#0A2342' },
+    { title: 'Resolved Tickets', value: '156', icon: CheckCircle, color: '#F47C20' },
+    { title: 'Active Users', value: '342', icon: Users, color: '#0A2342' },
   ];
 
   const recentBookings = [
