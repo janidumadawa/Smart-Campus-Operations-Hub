@@ -1,6 +1,5 @@
-// frontend/src/components/admin/ResourceManagement/ResourceModal.jsx
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Upload, Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const ResourceModal = ({ isOpen, onClose, onSuccess, editingResource, apiBaseUrl }) => {
@@ -11,6 +10,9 @@ const ResourceModal = ({ isOpen, onClose, onSuccess, editingResource, apiBaseUrl
     location: '',
     status: 'AVAILABLE'
   });
+  const [image, setImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (editingResource) {
@@ -21,6 +23,9 @@ const ResourceModal = ({ isOpen, onClose, onSuccess, editingResource, apiBaseUrl
         location: editingResource.location,
         status: editingResource.status
       });
+      if (editingResource.imagePublicId) {
+        setImagePreview(editingResource.imagePublicId);
+      }
     } else {
       setFormData({
         name: '',
@@ -29,12 +34,26 @@ const ResourceModal = ({ isOpen, onClose, onSuccess, editingResource, apiBaseUrl
         location: '',
         status: 'AVAILABLE'
       });
+      setImage(null);
+      setImagePreview('');
     }
   }, [editingResource, isOpen]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('Image size should be less than 10MB');
+        return;
+      }
+      setImage(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
   };
 
   const handleSubmit = async () => {
@@ -48,12 +67,22 @@ const ResourceModal = ({ isOpen, onClose, onSuccess, editingResource, apiBaseUrl
       return;
     }
 
+    setUploading(true);
     const resourceData = {
       ...formData,
       capacity: formData.type === 'EQUIPMENT' ? 1 : parseInt(formData.capacity)
     };
 
     try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('resource', new Blob([JSON.stringify(resourceData)], {
+        type: 'application/json'
+      }));
+      
+      if (image) {
+        formDataToSend.append('image', image);
+      }
+
       const url = editingResource
         ? `${apiBaseUrl}/${editingResource.id}`
         : apiBaseUrl;
@@ -62,8 +91,7 @@ const ResourceModal = ({ isOpen, onClose, onSuccess, editingResource, apiBaseUrl
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(resourceData)
+        body: formDataToSend
       });
 
       if (!response.ok) throw new Error('Failed to save resource');
@@ -74,6 +102,8 @@ const ResourceModal = ({ isOpen, onClose, onSuccess, editingResource, apiBaseUrl
     } catch (error) {
       console.error('Error saving resource:', error);
       toast.error('Failed to save resource');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -81,7 +111,7 @@ const ResourceModal = ({ isOpen, onClose, onSuccess, editingResource, apiBaseUrl
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-[#0A2342]">
             {editingResource ? 'Edit Resource' : 'Add New Resource'}
@@ -92,6 +122,49 @@ const ResourceModal = ({ isOpen, onClose, onSuccess, editingResource, apiBaseUrl
         </div>
 
         <div className="p-6 space-y-4">
+          {/* Image Upload Section */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
+            <div className="relative">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+                id="image-upload"
+              />
+              <label
+                htmlFor="image-upload"
+                className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-[#F47C20] transition-colors"
+              >
+                {imagePreview ? (
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <Upload className="w-8 h-8 text-gray-400 mb-1" />
+                    <p className="text-sm text-gray-500">Click to upload image</p>
+                    <p className="text-xs text-gray-400 mt-1">Max 10MB</p>
+                  </div>
+                )}
+              </label>
+              {imagePreview && (
+                <button
+                  onClick={() => {
+                    setImage(null);
+                    setImagePreview('');
+                  }}
+                  className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
             <input
@@ -169,9 +242,10 @@ const ResourceModal = ({ isOpen, onClose, onSuccess, editingResource, apiBaseUrl
         <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
           <button
             onClick={handleSubmit}
-            className="flex-1 px-4 py-2 bg-[#F47C20] text-white rounded-lg hover:bg-[#E06A10] transition-colors"
+            disabled={uploading}
+            className="flex-1 px-4 py-2 bg-[#F47C20] text-white rounded-lg hover:bg-[#E06A10] transition-colors disabled:opacity-50"
           >
-            {editingResource ? 'Update' : 'Add'} Resource
+            {uploading ? 'Uploading...' : (editingResource ? 'Update' : 'Add') + ' Resource'}
           </button>
           <button
             onClick={onClose}
