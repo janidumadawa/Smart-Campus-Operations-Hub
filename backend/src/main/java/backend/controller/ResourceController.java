@@ -19,14 +19,15 @@ public class ResourceController {
     private ResourceService resourceService;
 
     // GET all resources with pagination
-    @GetMapping
-    public Page<Resource> getAllResources(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String type,
-            @RequestParam(required = false) String location) {
-        return resourceService.getAllResources(page, size, type, location);
-    }
+@GetMapping
+public Page<Resource> getAllResources(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(required = false) String type,
+        @RequestParam(required = false) String location,
+        @RequestParam(required = false) String status) {
+    return resourceService.getAllResources(page, size, type, location, status);
+}
 
     // GET resource by ID
     @GetMapping("/{id}")
@@ -74,4 +75,18 @@ public class ResourceController {
         
         return "Sample resources created with image references!";
     }
+
+
+    // UPDATE resource
+    @PutMapping("/{id}")
+    public Resource updateResource(@PathVariable String id, @RequestBody Resource resource) {
+        return resourceService.updateResource(id, resource);
+    }
+
+    // DELETE resource
+    @DeleteMapping("/{id}")
+    public void deleteResource(@PathVariable String id) {
+        resourceService.deleteResource(id);
+    }
+
 }

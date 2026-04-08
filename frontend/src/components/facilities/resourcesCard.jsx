@@ -1,3 +1,4 @@
+// frontend\src\components\facilities\resourcesCard.jsx
 import React, { useEffect, useState } from 'react';
 
 const ResourcesCard = () => {
