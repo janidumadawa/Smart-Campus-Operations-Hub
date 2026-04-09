@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/shared/Navbar";
 import Footer from "../../components/shared/Footer";
 import { getBookings, saveBookings, resources } from "../../utils/bookingData";
+import { useAuth } from "../../context/AuthContext";
 
 const Bookingpage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
     resource: "",
@@ -41,6 +43,12 @@ const Bookingpage = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    if (!user) {
+      alert("Please login before submitting a booking.");
+      navigate("/login");
+      return;
+    }
+
     if (
       !formData.resource ||
       !formData.date ||
@@ -70,8 +78,8 @@ const Bookingpage = () => {
       ...formData,
       attendees: Number(formData.attendees),
       status: "PENDING",
-      requestedBy: "Nipuni Kavindya",
-      email: "nipuni@example.com",
+      requestedBy: user.fullName || user.name || "Campus User",
+      email: user.email || "user@example.com",
       adminReason: "",
     };
 
@@ -308,3 +316,6 @@ const StatusFlow = ({ label, dotClass, panelClass }) => {
 };
 
 export default Bookingpage;
+
+//nipuni
+//k
