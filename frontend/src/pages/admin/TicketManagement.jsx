@@ -10,12 +10,13 @@ const ADMIN_USER = { id: 'admin-001', name: 'Admin User', role: 'ADMIN' };
 const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '');
 
 const TicketManagement = () => {
-  const { getAdminTickets, updateStatus, assignTechnician, loading, error } = useTickets();
+  const { getAdminTickets, getAvailableResources, updateStatus, assignTechnician, loading, error } = useTickets();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [noteText, setNoteText] = useState('');
   const [tickets, setTickets] = useState([]);
+  const [resources, setResources] = useState([]);
   const [techId, setTechId] = useState('');
   const [techName, setTechName] = useState('');
   const [draftStatus, setDraftStatus] = useState('');
@@ -33,18 +34,39 @@ const TicketManagement = () => {
   }, [filterStatus]);
 
   useEffect(() => {
+    const loadResources = async () => {
+      const data = await getAvailableResources();
+      if (Array.isArray(data)) setResources(data);
+    };
+
+    loadResources();
+  }, [getAvailableResources]);
+
+  useEffect(() => {
     setDraftStatus(selectedTicket?.status || '');
   }, [selectedTicket]);
+
+  const resourcesById = useMemo(() => {
+    return resources.reduce((acc, resource) => {
+      if (resource?.id) acc[resource.id] = resource.name || resource.id;
+      return acc;
+    }, {});
+  }, [resources]);
+
+  const getTicketResourceLabel = (ticket) => {
+    if (!ticket) return '-';
+    return ticket.resourceName || resourcesById[ticket.resourceId] || ticket.resourceId || ticket.location || '-';
+  };
 
   const filteredTickets = useMemo(() => (
     tickets.filter((ticket) => {
       const title = (ticket.title || '').toLowerCase();
-      const location = (ticket.location || '').toLowerCase();
-      const resource = (ticket.resourceId || '').toLowerCase();
+      const resourceName = getTicketResourceLabel(ticket).toLowerCase();
+      const ticketId = (ticket.id || '').toLowerCase();
       const term = searchTerm.toLowerCase();
-      return title.includes(term) || location.includes(term) || resource.includes(term);
+      return title.includes(term) || resourceName.includes(term) || ticketId.includes(term);
     })
-  ), [tickets, searchTerm]);
+  ), [tickets, searchTerm, resourcesById]);
 
   const handleAssign = async () => {
     if (!selectedTicket || !techId || !techName) return;
@@ -259,7 +281,7 @@ const TicketManagement = () => {
                 <tr key={ticket.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm text-gray-600">#{ticket.id?.slice(-6)}</td>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{ticket.title}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{ticket.resourceId || ticket.location || '-'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{getTicketResourceLabel(ticket)}</td>
                   <td className="px-6 py-4">{getPriorityBadge(ticket.priority)}</td>
                   <td className="px-6 py-4">{getStatusBadge(ticket.status)}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{ticket.assignedTechnicianName || 'Unassigned'}</td>
@@ -299,7 +321,7 @@ const TicketManagement = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs text-gray-500">Resource</label>
-                  <p className="text-sm font-medium text-gray-900">{selectedTicket.resourceId || selectedTicket.location || '-'}</p>
+                  <p className="text-sm font-medium text-gray-900">{getTicketResourceLabel(selectedTicket)}</p>
                 </div>
                 <div>
                   <label className="text-xs text-gray-500">Category</label>
