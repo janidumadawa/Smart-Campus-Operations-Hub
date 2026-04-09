@@ -1,8 +1,7 @@
-// frontend/src/layouts/AdminLayout.jsx
 import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, Menu, User, Settings, LogOut } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 import AdminSideBar from '../components/admin/AdminSideBar';
 import NotificationPanel from '../components/admin/NotificationPanel';
 
@@ -12,10 +11,11 @@ const AdminLayout = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, logout, isAdmin, getUserInitial } = useAuth();
 
   const handleLogout = () => {
-    toast.success('Logged out successfully');
-    navigate('/auth');
+    logout();
+    navigate('/login');
   };
 
   const handleProfile = () => {
@@ -23,14 +23,16 @@ const AdminLayout = () => {
     setShowUserMenu(false);
   };
 
+  const getUserRole = () => {
+    if (isAdmin()) return 'Admin';
+    return 'Technician';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar Component */}
       <AdminSideBar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Main Content */}
       <div className="lg:pl-72">
-        {/* Top Header */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="px-6 py-4 flex items-center justify-between">
             <button
@@ -52,7 +54,6 @@ const AdminLayout = () => {
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
               
-              {/* User Menu Dropdown */}
               <div className="relative">
                 <button
                   onClick={() => {
@@ -62,17 +63,19 @@ const AdminLayout = () => {
                   className="flex items-center gap-3 hover:bg-gray-100 p-2 rounded-lg transition-colors"
                 >
                   <div className="w-8 h-8 rounded-full bg-[#F47C20] flex items-center justify-center text-white font-bold">
-                    A
+                    {getUserInitial()}
                   </div>
-                  <span className="hidden md:block text-sm font-medium text-gray-700">Admin User</span>
+                  <span className="hidden md:block text-sm font-medium text-gray-700">
+                    {user?.name || 'User'}
+                  </span>
                 </button>
 
-                {/* User Dropdown Menu */}
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-50">
                     <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                      <p className="text-sm font-medium text-gray-900">Admin User</p>
-                      <p className="text-xs text-gray-500">admin@campusflow.com</p>
+                      <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                      <p className="text-xs text-gray-500">{user?.email}</p>
+                      <p className="text-xs text-[#F47C20] mt-1 font-medium">{getUserRole()}</p>
                     </div>
                     <div className="py-2">
                       <button
@@ -105,7 +108,6 @@ const AdminLayout = () => {
                 )}
               </div>
 
-              {/* Notification Panel */}
               <NotificationPanel 
                 isOpen={showNotifications} 
                 onClose={() => setShowNotifications(false)} 
@@ -114,7 +116,6 @@ const AdminLayout = () => {
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="p-6">
           <Outlet />
         </main>
