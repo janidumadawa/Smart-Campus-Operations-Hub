@@ -1,24 +1,46 @@
+# ===============================
 # Compiled files
+# ===============================
 HELP.md
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-# Environment variables (CRITICAL - NEVER commit!)
+# ===============================
+# Environment variables (CRITICAL)
+# ===============================
 .env
-.env.local
-.env.*.local
+.env.*
 !.env.template
 !.env.example
 
-# Application properties with secrets - FIXED PATTERNS
+# ===============================
+# Application properties (Secrets)
+# ===============================
 **/src/main/resources/application.properties
 **/src/main/resources/application-*.properties
 !**/src/main/resources/application.properties.template
 !**/src/main/resources/application-template.properties
 
-# STS (Spring Tool Suite)
+# ===============================
+# Maven
+# ===============================
+.mvn/
+!.mvn/wrapper/maven-wrapper.properties
+mvnw
+mvnw.cmd
+
+# ===============================
+# Build folders
+# ===============================
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# ===============================
+# IDE - Spring Tool Suite
+# ===============================
 .apt_generated
 .classpath
 .factorypath
@@ -27,28 +49,33 @@ target/
 .springBeans
 .sts4-cache
 
-# IntelliJ IDEA
+# ===============================
+# IDE - IntelliJ
+# ===============================
 .idea/
 *.iws
 *.iml
 *.ipr
 /out/
 
-# NetBeans
+# ===============================
+# IDE - NetBeans
+# ===============================
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
+# ===============================
 # VS Code
+# ===============================
 .vscode/
 *.code-workspace
 
-# OS files
+# ===============================
+# OS Files
+# ===============================
 .DS_Store
 .DS_Store?
 ._*
@@ -60,7 +87,9 @@ Thumbs.db
 *.swo
 *~
 
-# Log files
+# ===============================
+# Logs
+# ===============================
 *.log
 *.log.gz
 logs/
@@ -68,26 +97,25 @@ build.log
 run.log
 application.log
 
-# Maven
-.mvn/
-.mvn/wrapper/maven-wrapper.jar
-!.mvn/wrapper/maven-wrapper.properties
-mvnw
-mvnw.cmd
-
+# ===============================
 # Docker
+# ===============================
 *.pid
 Dockerfile
 docker-compose*.yml
 .docker/
 
+# ===============================
 # Backup files
+# ===============================
 *.bak
 *.backup
 *.orig
 *.old
 
-# Secret files
+# ===============================
+# Secrets & Certificates
+# ===============================
 *.p12
 *.pfx
 *.jks
@@ -96,12 +124,16 @@ docker-compose*.yml
 *.crt
 .secrets/
 
+# ===============================
 # Database
+# ===============================
 *.db
 *.sqlite
 *.sql
 
-# Temporary files
+# ===============================
+# Temp / Cache
+# ===============================
 *.tmp
 *.temp
 *.cache

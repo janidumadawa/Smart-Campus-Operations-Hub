@@ -302,4 +302,3 @@ const Register = () => {
 };
 
 export default Register;
-//nipuni-db
