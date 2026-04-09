@@ -3,12 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, User, LogOut, Settings, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from "../../context/AuthContext";
 
 const Navbar = ({ activeSection }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const navigate = useNavigate();
+    const { user, logout } = useAuth();
 
     const navItems = [
         { name: 'Home', path: '/' },
@@ -25,6 +26,10 @@ const Navbar = ({ activeSection }) => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    const handleLogout = () => {
+        logout();
+        navigate("/login");
+    };
 
     return (
         <>
@@ -38,8 +43,8 @@ const Navbar = ({ activeSection }) => {
                         className={`
         rounded-2xl backdrop-blur-md transition-all duration-300
         ${scrolled
-                                ? 'bg-gradient-to-r from-[#0A2342]/90 to-[#0A2342]/80 shadow-xl shadow-black/20 border border-[#F47C20]/30'
-                                : 'bg-gradient-to-r from-[#0A2342]/80 to-[#0A2342]/70 shadow-lg shadow-black/10 border border-[#F47C20]/20'
+                                ? 'bg-gradient-to-r from-[#0A2342]/90 to-[#0A2342]/80 shadow-xl shadow-white/20 border border-[#F47C20]/30'
+                                : 'bg-gradient-to-r from-[#0A2342]/80 to-[#0A2342]/70 shadow-lg shadow-white/10 border border-[#F47C20]/20'
                             }
     `}
                         animate={{
@@ -86,18 +91,23 @@ const Navbar = ({ activeSection }) => {
                                 <div className="flex justify-end items-center gap-3">
                                     {/* Desktop Auth Buttons */}
                                     <div className="hidden md:flex gap-3">
-                                        {!isLoggedIn ? (
+                                        {!user ? (
                                             <>
-                                                <Link to="/auth" className="px-5 py-2 rounded-full font-semibold transition-all duration-300 border-2 border-[#F47C20] text-[#F47C20] hover:bg-[#F47C20] hover:text-white">
+                                                <Link to="/login" className="px-5 py-2 rounded-full font-semibold transition-all duration-300 border-2 border-[#F47C20] text-[#F47C20] hover:bg-[#F47C20] hover:text-white">
                                                     Login
                                                 </Link>
-                                                <Link to="/auth/register" className="px-5 py-2 rounded-full font-semibold transition-all duration-300 bg-[#F47C20] text-white hover:bg-[#E06A10] hover:shadow-lg">
+                                                <Link to="/register" className="px-5 py-2 rounded-full font-semibold transition-all duration-300 bg-[#F47C20] text-white hover:bg-[#E06A10] hover:shadow-lg">
                                                     Sign Up
                                                 </Link>
                                             </>
                                         ) : (
                                             <div className="flex items-center gap-3">
-                                                {/* User menu content */}
+                                                <button
+                                                    onClick={handleLogout}
+                                                    className="px-5 py-2 rounded-full font-semibold transition-all duration-300 bg-red-500 text-white hover:bg-red-600"
+                                                >
+                                                    Logout
+                                                </button>
                                             </div>
                                         )}
                                     </div>
@@ -140,17 +150,17 @@ const Navbar = ({ activeSection }) => {
                                             </Link>
                                         ))}
                                         <div className="border-t border-gray-100 my-2"></div>
-                                        {!isLoggedIn ? (
+                                        {!user ? (
                                             <>
                                                 <Link
-                                                    to="/auth"
+                                                    to="/login"
                                                     onClick={() => setIsOpen(false)}
                                                     className="px-4 py-3 text-center text-[#F47C20] border-2 border-[#F47C20] rounded-xl font-semibold hover:bg-[#F47C20] hover:text-white transition-all duration-300"
                                                 >
                                                     Login
                                                 </Link>
                                                 <Link
-                                                    to="/auth/register"
+                                                    to="/register"
                                                     onClick={() => setIsOpen(false)}
                                                     className="px-4 py-3 text-center bg-[#F47C20] text-white rounded-xl font-semibold hover:bg-[#E06A10] transition-all duration-300"
                                                 >
