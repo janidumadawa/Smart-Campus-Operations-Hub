@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface BookingRepository extends MongoRepository<Booking, String> {
     List<Booking> findByEmail(String email);
-    List<Booking> findByResourceAndDate(String resource, String date);
+    List<Booking> findByResourceIdAndDate(String resourceId, String date);
 }

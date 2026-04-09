@@ -10,47 +10,39 @@ public class Booking {
     @Id
     private String id;
 
-    private String resource;
+    private String resourceId;
+    private String resourceName;
     private String date;
     private String startTime;
     private String endTime;
     private String purpose;
     private Integer attendees;
-
     private String requestedBy;
     private String email;
-
     private BookingStatus status;
     private String adminReason;
 
     public Booking() {
     }
 
-    public Booking(String resource, String date, String startTime, String endTime, String purpose,
-                   Integer attendees, String requestedBy, String email,
-                   BookingStatus status, String adminReason) {
-        this.resource = resource;
-        this.date = date;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.purpose = purpose;
-        this.attendees = attendees;
-        this.requestedBy = requestedBy;
-        this.email = email;
-        this.status = status;
-        this.adminReason = adminReason;
-    }
-
     public String getId() {
         return id;
     }
 
-    public String getResource() {
-        return resource;
+    public String getResourceId() {
+        return resourceId;
     }
 
-    public void setResource(String resource) {
-        this.resource = resource;
+    public void setResourceId(String resourceId) {
+        this.resourceId = resourceId;
+    }
+
+    public String getResourceName() {
+        return resourceName;
+    }
+
+    public void setResourceName(String resourceName) {
+        this.resourceName = resourceName;
     }
 
     public String getDate() {

@@ -1,32 +1,43 @@
 package backend.service;
 
 import backend.dto.BookingRequestDTO;
-import backend.dto.BookingResponseDTO;
 import backend.enums.BookingStatus;
 import backend.exception.ConflictException;
 import backend.exception.ResourceNotFoundException;
 import backend.model.Booking;
+import backend.model.Resource;
 import backend.repository.BookingRepository;
+import backend.repository.ResourceRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class BookingService {
 
     private final BookingRepository bookingRepository;
+    private final ResourceRepository resourceRepository;
 
-    public BookingService(BookingRepository bookingRepository) {
+    public BookingService(BookingRepository bookingRepository, ResourceRepository resourceRepository) {
         this.bookingRepository = bookingRepository;
+        this.resourceRepository = resourceRepository;
     }
 
-    public BookingResponseDTO createBooking(BookingRequestDTO dto) {
-        validateBookingRequest(dto);
+    public Booking createBooking(BookingRequestDTO dto) {
+        if (dto.getResourceId() == null || dto.getResourceId().trim().isEmpty()) {
+            throw new IllegalArgumentException("Resource ID is required.");
+        }
 
-        List<Booking> sameDayBookings = bookingRepository.findByResourceAndDate(dto.getResource(), dto.getDate());
+        Resource resource = resourceRepository.findById(dto.getResourceId())
+                .orElseThrow(() -> new ResourceNotFoundException("Resource not found."));
 
-        boolean hasConflict = sameDayBookings.stream().anyMatch(booking ->
+        if ("OUT_OF_SERVICE".equalsIgnoreCase(resource.getStatus())) {
+            throw new IllegalArgumentException("Selected resource is out of service.");
+        }
+
+        List<Booking> existingBookings = bookingRepository.findByResourceIdAndDate(resource.getId(), dto.getDate());
+
+        boolean hasConflict = existingBookings.stream().anyMatch(booking ->
                 booking.getStatus() != BookingStatus.REJECTED &&
                 booking.getStatus() != BookingStatus.CANCELLED &&
                 dto.getStartTime().compareTo(booking.getEndTime()) < 0 &&
@@ -37,100 +48,27 @@ public class BookingService {
             throw new ConflictException("Booking conflict detected for this resource and time.");
         }
 
-        Booking booking = new Booking(
-                dto.getResource(),
-                dto.getDate(),
-                dto.getStartTime(),
-                dto.getEndTime(),
-                dto.getPurpose(),
-                dto.getAttendees(),
-                dto.getRequestedBy(),
-                dto.getEmail(),
-                BookingStatus.PENDING,
-                ""
-        );
-
-        return mapToResponse(bookingRepository.save(booking));
-    }
-
-    public List<BookingResponseDTO> getAllBookings() {
-        return bookingRepository.findAll()
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    public BookingResponseDTO getBookingById(String id) {
-        Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
-        return mapToResponse(booking);
-    }
-
-    public List<BookingResponseDTO> getBookingsByEmail(String email) {
-        return bookingRepository.findByEmail(email)
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    public BookingResponseDTO approveBooking(String id) {
-        Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
-
-        booking.setStatus(BookingStatus.APPROVED);
+        Booking booking = new Booking();
+        booking.setResourceId(resource.getId());
+        booking.setResourceName(resource.getName());
+        booking.setDate(dto.getDate());
+        booking.setStartTime(dto.getStartTime());
+        booking.setEndTime(dto.getEndTime());
+        booking.setPurpose(dto.getPurpose());
+        booking.setAttendees(dto.getAttendees());
+        booking.setRequestedBy(dto.getRequestedBy());
+        booking.setEmail(dto.getEmail());
+        booking.setStatus(BookingStatus.PENDING);
         booking.setAdminReason("");
 
-        return mapToResponse(bookingRepository.save(booking));
+        return bookingRepository.save(booking);
     }
 
-    public BookingResponseDTO rejectBooking(String id, String reason) {
-        Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
-
-        booking.setStatus(BookingStatus.REJECTED);
-        booking.setAdminReason(reason == null ? "" : reason);
-
-        return mapToResponse(bookingRepository.save(booking));
+    public List<Booking> getAllBookings() {
+        return bookingRepository.findAll();
     }
 
-    public BookingResponseDTO cancelBooking(String id) {
-        Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
-
-        booking.setStatus(BookingStatus.CANCELLED);
-
-        return mapToResponse(bookingRepository.save(booking));
-    }
-
-    private void validateBookingRequest(BookingRequestDTO dto) {
-        if (isBlank(dto.getResource()) || isBlank(dto.getDate()) || isBlank(dto.getStartTime())
-                || isBlank(dto.getEndTime()) || isBlank(dto.getPurpose())
-                || dto.getAttendees() == null || isBlank(dto.getRequestedBy()) || isBlank(dto.getEmail())) {
-            throw new IllegalArgumentException("All booking fields are required.");
-        }
-
-        if (dto.getStartTime().compareTo(dto.getEndTime()) >= 0) {
-            throw new IllegalArgumentException("End time must be later than start time.");
-        }
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
-    }
-
-    private BookingResponseDTO mapToResponse(Booking booking) {
-        return new BookingResponseDTO(
-                booking.getId(),
-                booking.getResource(),
-                booking.getDate(),
-                booking.getStartTime(),
-                booking.getEndTime(),
-                booking.getPurpose(),
-                booking.getAttendees(),
-                booking.getRequestedBy(),
-                booking.getEmail(),
-                booking.getStatus(),
-                booking.getAdminReason()
-        );
+    public List<Booking> getBookingsByEmail(String email) {
+        return bookingRepository.findByEmail(email);
     }
 }

@@ -2,7 +2,7 @@ package backend.dto;
 
 public class BookingRequestDTO {
 
-    private String resource;
+    private String resourceId;
     private String date;
     private String startTime;
     private String endTime;
@@ -14,12 +14,12 @@ public class BookingRequestDTO {
     public BookingRequestDTO() {
     }
 
-    public String getResource() {
-        return resource;
+    public String getResourceId() {
+        return resourceId;
     }
 
-    public void setResource(String resource) {
-        this.resource = resource;
+    public void setResourceId(String resourceId) {
+        this.resourceId = resourceId;
     }
 
     public String getDate() {
