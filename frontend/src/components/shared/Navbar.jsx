@@ -13,7 +13,7 @@ const Navbar = ({ activeSection }) => {
     const navItems = [
         { name: 'Home', path: '/' },
         { name: 'Facilities', path: '/facilities' },
-        { name: 'My Bookings', path: '/bookings/my-bookings' },
+        { name: 'Bookings', path: '/bookings' },
         { name: 'Tickets', path: '/tickets' },
     ];
 

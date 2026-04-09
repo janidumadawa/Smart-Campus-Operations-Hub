@@ -2,7 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../../components/shared/Navbar";
 import Footer from "../../components/shared/Footer";
-import { getBookings, saveBookings, getStatusDotStyle } from "../../utils/bookingData";
+import {
+  getBookings,
+  saveBookings,
+  getStatusDotStyle,
+} from "../../utils/bookingData";
 
 const MyBookings = () => {
   const [bookings, setBookings] = useState([]);
@@ -41,7 +45,14 @@ const MyBookings = () => {
           </p>
         </div>
 
-        <div className="mb-6 flex justify-end">
+        <div className="mb-6 flex justify-between gap-4">
+          <Link
+            to="/bookings"
+            className="rounded-2xl bg-[#F47C20] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#db6d16]"
+          >
+            Create New Booking
+          </Link>
+
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
@@ -118,7 +129,7 @@ const MyBookings = () => {
                       </td>
                       <td className="px-6 py-5">
                         <Link
-                          to={`/bookings/details/${booking.id}`}
+                          to={`/bookings/${booking.id}`}
                           className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
                         >
                           View

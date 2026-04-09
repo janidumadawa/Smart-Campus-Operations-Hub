@@ -6,7 +6,7 @@ import { getBookings, getStatusDotStyle } from "../../utils/bookingData";
 
 const BookingDetails = () => {
   const { id } = useParams();
-  const bookings = getBookings();
+  const bookings = getBookings ? getBookings() : [];
   const booking = bookings.find((item) => String(item.id) === String(id));
 
   if (!booking) {
@@ -18,10 +18,10 @@ const BookingDetails = () => {
             Booking Not Found
           </h2>
           <Link
-            to="/bookings/my-bookings"
+            to="/bookings"
             className="mt-6 inline-block rounded-2xl bg-[#F47C20] px-6 py-3 font-semibold text-white"
           >
-            Back to My Bookings
+            Back to Bookings
           </Link>
         </div>
         <Footer />
@@ -45,7 +45,7 @@ const BookingDetails = () => {
           </div>
 
           <Link
-            to="/bookings/my-bookings"
+            to="/bookings"
             className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white"
           >
             Back
@@ -56,9 +56,7 @@ const BookingDetails = () => {
           <div className="mb-8">
             <div className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-4 py-2">
               <span
-                className={`h-3 w-3 rounded-full ${getStatusDotStyle(
-                  booking.status
-                )}`}
+                className={`h-3 w-3 rounded-full ${getStatusDotStyle(booking.status)}`}
               ></span>
               <span className="text-sm font-semibold text-slate-700">
                 {booking.status}
