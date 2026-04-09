@@ -14,4 +14,4 @@ const ProtectedRoute = ({ children }) => {
 
 export default ProtectedRoute;
 
-
+//update new version of react-router-dom to v6, useNavigate instead of Navigate
