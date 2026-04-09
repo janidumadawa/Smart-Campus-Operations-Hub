@@ -10,12 +10,13 @@ target/
 .env.local
 .env.*.local
 !.env.template
+!.env.example
 
-# Application properties with secrets
-**/application.properties
-!**/application.properties.template
-**/application-dev.properties
-**/application-prod.properties
+# Application properties with secrets - FIXED PATTERNS
+**/src/main/resources/application.properties
+**/src/main/resources/application-*.properties
+!**/src/main/resources/application.properties.template
+!**/src/main/resources/application-template.properties
 
 # STS (Spring Tool Suite)
 .apt_generated
@@ -105,8 +106,3 @@ docker-compose*.yml
 *.temp
 *.cache
 .cache/
-
-# Application specific
-**/application-*.properties
-!**/application-template.properties
-!.mvn/wrapper/maven-wrapper.properties
