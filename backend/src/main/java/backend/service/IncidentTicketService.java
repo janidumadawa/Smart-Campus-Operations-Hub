@@ -150,6 +150,7 @@ public class IncidentTicketService {
 
     // ─── GET ──────────────────────────────────────────────────
     public IncidentTicket getTicketById(String id) {
+        if (id == null) throw new IllegalArgumentException("Ticket ID cannot be null");
         return ticketRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Ticket not found: " + id));
     }
@@ -505,6 +506,7 @@ public class IncidentTicketService {
 
     // ─── DELETE TICKET ────────────────────────────────────────
     public void deleteTicket(String id) {
+        if (id == null) throw new IllegalArgumentException("Ticket ID cannot be null");
         if (!ticketRepository.existsById(id)) {
             throw new NoSuchElementException("Ticket not found: " + id);
         }

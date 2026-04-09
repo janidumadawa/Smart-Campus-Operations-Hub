@@ -1,18 +1,16 @@
-// backend\src\main\java\backend\repository\ResourceRepository.java
 package backend.repository;
 
 import backend.model.Resource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
-import java.util.List;
 
 @Repository
 public interface ResourceRepository extends MongoRepository<Resource, String> {
-    
-    /**
-     * Find all resources with a specific status
-     * @param status the status to filter by (e.g., "AVAILABLE", "OUT_OF_SERVICE")
-     * @return list of resources matching the status
-     */
-    List<Resource> findByStatus(String status);
+    Page<Resource> findByType(String type, Pageable pageable);
+    Page<Resource> findByStatus(String status, Pageable pageable);
+    Page<Resource> findByTypeAndStatus(String type, String status, Pageable pageable);
+    Page<Resource> findByNameContainingIgnoreCaseOrLocationContainingIgnoreCase(
+        String name, String location, Pageable pageable);
 }

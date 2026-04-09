@@ -152,16 +152,13 @@ const TicketManagement = () => {
     return <span className={`px-2 py-1 text-xs rounded-full ${priorities[priority] || 'bg-gray-100 text-gray-700'}`}>{priority}</span>;
   };
 
-  // FIXED: removed encodeURI to prevent double-encoding, handle all URL formats cleanly
   const getAttachmentSrc = (url) => {
     if (!url) return '';
 
-    // Already a full absolute URL — use as-is
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
 
-    // Relative path — prepend API origin
     const normalized = url.startsWith('/') ? url : `/${url}`;
     return `${API_ORIGIN}${normalized}`;
   };
@@ -298,46 +295,6 @@ const TicketManagement = () => {
                 <h3 className="font-semibold text-gray-900 mb-2">{selectedTicket.title}</h3>
                 <p className="text-gray-600 text-sm">{selectedTicket.description}</p>
               </div>
-
-              {/* Attachments — FIXED: proper error handling and logging */}
-              {selectedTicket.attachmentUrls?.length > 0 && (
-                <div>
-                  <label className="text-xs text-gray-500">Attachments</label>
-                  <div className="mt-2 flex gap-2 flex-wrap">
-                    {selectedTicket.attachmentUrls.map((url, i) => {
-                      const src = getAttachmentSrc(url);
-                      console.log(`Image ${i + 1} URL:`, url);
-                      console.log(`Image ${i + 1} Source:`, src);
-                      return (
-                        <div
-                          key={i}
-                          className="w-24 h-24 rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:opacity-80 transition bg-gray-50 flex items-center justify-center"
-                          onClick={() => setActiveImg(url)}
-                        >
-                          <img
-                            src={src}
-                            alt=""
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              console.error(`Attachment ${i + 1} failed to load:`, {
-                                originalUrl: url,
-                                processedSrc: src,
-                                error: e.error
-                              });
-                              e.target.style.display = 'none';
-                              e.target.parentNode.innerHTML =
-                                `<span class="text-xs text-gray-400 text-center px-1">Failed to load</span>`;
-                            }}
-                            onLoad={() => {
-                              console.log(`Image ${i + 1} loaded successfully`);
-                            }}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>

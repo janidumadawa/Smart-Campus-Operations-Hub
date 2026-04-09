@@ -1,14 +1,23 @@
 import React, { useEffect, useState } from 'react';
+import UserResourceFilters from './UserResourceFilters';
+import UserResourceDetailsModal from './UserResourceDetailsModal';
 
 const ResourcesCard = () => {
     const [resources, setResources] = useState([]);
+    const [filteredResources, setFilteredResources] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterType, setFilterType] = useState('');
+    const [filterStatus, setFilterStatus] = useState('');
+    const [selectedResource, setSelectedResource] = useState(null);
+    const [showDetailsModal, setShowDetailsModal] = useState(false);
 
     useEffect(() => {
-        fetch('http://localhost:8080/resources')
+        fetch('http://localhost:8080/resources?size=100')
             .then(res => res.json())
             .then(data => {
                 setResources(data.content || []);
+                setFilteredResources(data.content || []);
                 setLoading(false);
             })
             .catch(err => {
@@ -17,6 +26,32 @@ const ResourcesCard = () => {
             });
     }, []);
 
+    // Apply filters
+    useEffect(() => {
+        let filtered = [...resources];
+
+        if (searchTerm) {
+            filtered = filtered.filter(resource =>
+                resource.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                resource.location.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        if (filterType) {
+            filtered = filtered.filter(resource => resource.type === filterType);
+        }
+
+        if (filterStatus) {
+            filtered = filtered.filter(resource => resource.status === filterStatus);
+        }
+
+        setFilteredResources(filtered);
+    }, [searchTerm, filterType, filterStatus, resources]);
+
+    const handleViewDetails = (resource) => {
+        setSelectedResource(resource);
+        setShowDetailsModal(true);
+    };
     if (loading) {
         return (
             <div className="flex justify-center items-center py-20">
@@ -25,18 +60,37 @@ const ResourcesCard = () => {
         );
     }
 
-    if (resources.length === 0) {
-        return (
-            <div className="text-center py-20">
-                <p className="text-gray-500 text-lg">No resources found.</p>
-            </div>
-        );
-    }
-
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {resources.map(resource => (
-                <div 
+        <>
+            <div className="flex flex-col lg:flex-row gap-8">
+                {/* Left Sidebar - Filters */}
+                <div className="lg:w-80 flex-shrink-0">
+                    <UserResourceFilters
+                        searchTerm={searchTerm}
+                        setSearchTerm={setSearchTerm}
+                        filterType={filterType}
+                        setFilterType={setFilterType}
+                        filterStatus={filterStatus}
+                        setFilterStatus={setFilterStatus}
+                    />
+                </div>
+
+                {/* Right Content - Cards Grid */}
+                <div className="flex-1">
+                    {/* Results Count */}
+                    <div className="mb-4 text-sm text-gray-600">
+                        Showing <span className="font-semibold text-[#0A2342]">{filteredResources.length}</span> {filteredResources.length === 1 ? 'resource' : 'resources'}
+                    </div>
+
+                    {/* Resources Grid */}
+                    {filteredResources.length === 0 ? (
+                        <div className="text-center py-20 bg-gray-50 rounded-xl">
+                            <p className="text-gray-500 text-lg">No resources found matching your filters.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {filteredResources.map(resource => (
+                                <div 
                     key={resource.id} 
                     className="group bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 border border-gray-100 flex flex-col"
                 >
@@ -106,13 +160,27 @@ const ResourcesCard = () => {
                         </div>
                         
                         {/* Action button */}
-                        <button className="mt-6 w-full bg-[#0A2342] text-white py-2.5 px-4 rounded-lg hover:bg-[#F47C20] transition-all duration-300 font-medium">
+                        <button
+                            onClick={() => handleViewDetails(resource)}
+                            className="mt-6 w-full bg-[#0A2342] text-white py-3 px-4 rounded-lg hover:bg-[#F47C20] transition-all duration-300 font-bold text-base shadow-md hover:shadow-lg"
+                        >
                             View Details
                         </button>
                     </div>
                 </div>
             ))}
-        </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Resource Details Modal */}
+            <UserResourceDetailsModal
+                isOpen={showDetailsModal}
+                onClose={() => setShowDetailsModal(false)}
+                resource={selectedResource}
+            />
+        </>
     );
 };
 

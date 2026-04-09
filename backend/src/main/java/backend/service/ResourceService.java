@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface ResourceService {
 
-    Page<Resource> getAllResources(int page, int size, String type, String location);
+    Page<Resource> getAllResources(int page, int size, String type, String location, String status);
 
     Resource getResourceById(String id);
 
@@ -22,6 +22,10 @@ public interface ResourceService {
      */
     List<Resource> getAvailableResources();
 
+    Resource updateResource(String id, Resource resource);
+
+    void deleteResource(String id);
+
     /**
      * Upload an image for a resource to Cloudinary
      * @param id the resource ID
@@ -30,5 +34,4 @@ public interface ResourceService {
      * @throws IOException if upload fails
      */
     Resource uploadResourceImage(String id, MultipartFile image) throws IOException;
-
 }

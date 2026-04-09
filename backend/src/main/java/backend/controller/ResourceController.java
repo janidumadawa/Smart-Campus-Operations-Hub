@@ -1,11 +1,10 @@
-// backend\src\main\java\backend\controller\ResourceController.java
 package backend.controller;
 
 import backend.model.Resource;
+import backend.service.CloudinaryService;
 import backend.service.ResourceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,14 +21,29 @@ public class ResourceController {
     @Autowired
     private ResourceService resourceService;
 
+    @Autowired
+    private CloudinaryService cloudinaryService;
+
     // GET all resources with pagination
     @GetMapping
     public Page<Resource> getAllResources(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String type,
-            @RequestParam(required = false) String location) {
-        return resourceService.getAllResources(page, size, type, location);
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String status) {
+        
+        Page<Resource> resources = resourceService.getAllResources(page, size, type, location, status);
+        
+        // Convert imagePublicId to full URL for each resource
+        resources.getContent().forEach(resource -> {
+            if (resource.getImagePublicId() != null && !resource.getImagePublicId().isEmpty()) {
+                String imageUrl = cloudinaryService.getImageUrl(resource.getImagePublicId());
+                resource.setImagePublicId(imageUrl);
+            }
+        });
+        
+        return resources;
     }
 
     // GET all available resources (for ticket form selection)
@@ -42,60 +56,163 @@ public class ResourceController {
     // GET resource by ID
     @GetMapping("/{id}")
     public Resource getResourceById(@PathVariable String id) {
-        return resourceService.getResourceById(id);
+        Resource resource = resourceService.getResourceById(id);
+        if (resource != null && resource.getImagePublicId() != null && !resource.getImagePublicId().isEmpty()) {
+            String imageUrl = cloudinaryService.getImageUrl(resource.getImagePublicId());
+            resource.setImagePublicId(imageUrl);
+        }
+        return resource;
     }
 
-    // CREATE new resource
+    // CREATE new resource with optional image
     @PostMapping
-    public Resource createResource(@RequestBody Resource resource) {
+    public Resource createResource(
+            @RequestPart("resource") Resource resource,
+            @RequestPart(value = "image", required = false) MultipartFile image) throws IOException {
+        
+        if (image != null && !image.isEmpty()) {
+            Map<String, Object> uploadResult = cloudinaryService.uploadImage(image, "resources", null);
+            String publicId = (String) uploadResult.get("public_id");
+            resource.setImagePublicId(publicId);
+        }
+        
+        Resource savedResource = resourceService.createResource(resource);
+        
+        // Return with full URL
+        if (savedResource.getImagePublicId() != null && !savedResource.getImagePublicId().isEmpty()) {
+            savedResource.setImagePublicId(cloudinaryService.getImageUrl(savedResource.getImagePublicId()));
+        }
+        
+        return savedResource;
+    }
+
+    // CREATE without image (for simple JSON requests)
+    @PostMapping("/simple")
+    public Resource createResourceSimple(@RequestBody Resource resource) {
         return resourceService.createResource(resource);
     }
 
-    // UPLOAD image for a resource to Cloudinary
-    @PostMapping("/{id}/upload-image")
-    public ResponseEntity<Map<String, Object>> uploadResourceImage(
+    // UPDATE resource with optional image
+    @PutMapping("/{id}")
+    public Resource updateResource(
             @PathVariable String id,
-            @RequestParam("image") MultipartFile image) {
+            @RequestPart("resource") Resource resourceUpdate,
+            @RequestPart(value = "image", required = false) MultipartFile image) throws IOException {
         
-        try {
-            if (image == null || image.isEmpty()) {
-                return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Image file is required"));
-            }
-
-            Resource updatedResource = resourceService.uploadResourceImage(id, image);
-            
-            return ResponseEntity.ok(Map.of(
-                "message", "Image uploaded successfully",
-                "resourceId", updatedResource.getId(),
-                "imagePublicId", updatedResource.getImagePublicId(),
-                "imageUrl", updatedResource.getImageUrl()
-            ));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("error", e.getMessage()));
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to upload image: " + e.getMessage()));
+        Resource existing = resourceService.getResourceById(id);
+        if (existing == null) {
+            throw new RuntimeException("Resource not found with id: " + id);
         }
+
+        // Update fields from request
+        existing.setName(resourceUpdate.getName());
+        existing.setType(resourceUpdate.getType());
+        existing.setLocation(resourceUpdate.getLocation());
+        existing.setCapacity(resourceUpdate.getCapacity());
+        existing.setStatus(resourceUpdate.getStatus());
+
+        // Handle image update
+        if (image != null && !image.isEmpty()) {
+            // Delete old image if exists
+            if (existing.getImagePublicId() != null && !existing.getImagePublicId().isEmpty()) {
+                try {
+                    cloudinaryService.deleteImage(existing.getImagePublicId());
+                } catch (IOException e) {
+                    System.err.println("Warning: Failed to delete old image: " + e.getMessage());
+                }
+            }
+            // Upload new image
+            Map<String, Object> uploadResult = cloudinaryService.uploadImage(image, "resources", null);
+            String newPublicId = (String) uploadResult.get("public_id");
+            existing.setImagePublicId(newPublicId);
+        }
+        // If no new image, keep the existing imagePublicId
+
+        Resource updatedResource = resourceService.updateResource(id, existing);
+        
+        // Return with full URL
+        if (updatedResource.getImagePublicId() != null && !updatedResource.getImagePublicId().isEmpty()) {
+            updatedResource.setImagePublicId(cloudinaryService.getImageUrl(updatedResource.getImagePublicId()));
+        }
+        
+        return updatedResource;
     }
 
-    // Create sample resources (for development/testing only)
-    @PostMapping("/sample")
-    public String createSampleResources() {
-        // NOTE: This endpoint is for testing only
-        // In production, use the POST /resources endpoint with proper data
-        Resource room1 = new Resource("Conference Room A", "ROOM", "Building 1, Floor 2", 20, "AVAILABLE", 
-            "sample/conference-room-a");
-        Resource room2 = new Resource("Meeting Room B", "ROOM", "Building 2, Floor 1", 10, "AVAILABLE",
-            "sample/meeting-room-b");
-        Resource projector = new Resource("HD Projector", "EQUIPMENT", "Media Center", 1, "AVAILABLE",
-            "sample/projector");
+    // UPDATE without image (for simple JSON requests)
+    @PutMapping("/{id}/simple")
+    public Resource updateResourceSimple(@PathVariable String id, @RequestBody Resource resourceUpdate) {
+        Resource existing = resourceService.getResourceById(id);
+        if (existing == null) {
+            throw new RuntimeException("Resource not found with id: " + id);
+        }
         
-        resourceService.createResource(room1);
-        resourceService.createResource(room2);
-        resourceService.createResource(projector);
+        // Update fields but keep existing image
+        existing.setName(resourceUpdate.getName());
+        existing.setType(resourceUpdate.getType());
+        existing.setLocation(resourceUpdate.getLocation());
+        existing.setCapacity(resourceUpdate.getCapacity());
+        existing.setStatus(resourceUpdate.getStatus());
+        // Keep existing imagePublicId
         
-        return "Sample resources created with image references!";
+        return resourceService.updateResource(id, existing);
+    }
+
+    // UPLOAD image for existing resource
+    @PostMapping("/{id}/upload-image")
+    public Resource uploadResourceImage(
+            @PathVariable String id,
+            @RequestParam("image") MultipartFile image) throws IOException {
+        
+        Resource resource = resourceService.getResourceById(id);
+        if (resource == null) {
+            throw new RuntimeException("Resource not found with id: " + id);
+        }
+
+        // Delete old image if exists
+        if (resource.getImagePublicId() != null && !resource.getImagePublicId().isEmpty()) {
+            try {
+                cloudinaryService.deleteImage(resource.getImagePublicId());
+            } catch (IOException e) {
+                System.err.println("Warning: Failed to delete old image: " + e.getMessage());
+            }
+        }
+
+        // Upload new image
+        Map<String, Object> uploadResult = cloudinaryService.uploadImage(image, "resources", null);
+        String publicId = (String) uploadResult.get("public_id");
+        resource.setImagePublicId(publicId);
+        
+        Resource updatedResource = resourceService.updateResource(id, resource);
+        
+        // Return with full URL
+        if (updatedResource.getImagePublicId() != null && !updatedResource.getImagePublicId().isEmpty()) {
+            updatedResource.setImagePublicId(cloudinaryService.getImageUrl(updatedResource.getImagePublicId()));
+        }
+        
+        return updatedResource;
+    }
+
+    // DELETE resource
+    @DeleteMapping("/{id}")
+    public void deleteResource(@PathVariable String id) {
+        Resource resource = resourceService.getResourceById(id);
+        if (resource != null && resource.getImagePublicId() != null && !resource.getImagePublicId().isEmpty()) {
+            try {
+                cloudinaryService.deleteImage(resource.getImagePublicId());
+            } catch (IOException e) {
+                System.err.println("Failed to delete image: " + e.getMessage());
+            }
+        }
+        resourceService.deleteResource(id);
+    }
+
+    // GET image URL
+    @GetMapping("/{id}/image-url")
+    public String getImageUrl(@PathVariable String id) {
+        Resource resource = resourceService.getResourceById(id);
+        if (resource != null && resource.getImagePublicId() != null) {
+            return cloudinaryService.getImageUrl(resource.getImagePublicId());
+        }
+        return null;
     }
 }

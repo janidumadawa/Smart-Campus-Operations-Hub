@@ -1,3 +1,4 @@
+// src/pages/facilities/Facilitiespage.jsx
 import React from 'react';
 import Navbar from '../../components/shared/Navbar';
 import Footer from '../../components/shared/Footer';
@@ -15,7 +16,7 @@ const Facilitiespage = () => {
                         Faci<span className="text-[#F47C20]">lities</span>
                     </h1>
                     <p className="text-gray-300 text-xl max-w-2xl mx-auto">
-                        Submit incident report tickets and monitor resolution status instantly.
+                        Browse and explore campus facilities and equipment available for booking.
                     </p>
                 </div>
             </div>

@@ -1,7 +1,7 @@
-// backend\src\main\java\backend\model\Resource.java
 package backend.model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "resources")
@@ -11,11 +11,14 @@ public class Resource {
     private String id;
 
     private String name;
-    private String type; // ROOM or EQUIPMENT
+    private String type;
     private String location;
     private int capacity;
-    private String status; // AVAILABLE or OUT_OF_SERVICE
-    private String imagePublicId; // Cloudinary image public ID (optional)
+    private String status;
+    private String imagePublicId;
+    
+    @Transient
+    private String imageUrl;
 
     // constructors
     public Resource() {}
@@ -86,16 +89,11 @@ public class Resource {
         this.imagePublicId = imagePublicId;
     }
 
-    /**
-     * Get the Cloudinary image URL for this resource
-     * Constructs the URL from the imagePublicId if available
-     * @return the secure HTTPS URL to the image, or null if no image is set
-     */
     public String getImageUrl() {
-        if (imagePublicId == null || imagePublicId.isEmpty()) {
-            return null;
-        }
-        // Construct Cloudinary URL: https://res.cloudinary.com/{cloud_name}/image/upload/{public_id}
-        return "https://res.cloudinary.com/de7m7i4xy/image/upload/" + imagePublicId;
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

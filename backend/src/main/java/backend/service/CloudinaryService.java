@@ -41,6 +41,7 @@ public class CloudinaryService {
      * @return a map containing upload response with public_id and secure_url
      * @throws IOException if upload fails
      */
+    @SuppressWarnings("unchecked")
     public Map<String, Object> uploadImage(MultipartFile file, String folder, String publicId) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File cannot be empty");
@@ -77,7 +78,7 @@ public class CloudinaryService {
             log.debug("Upload parameters: folder={}, publicId={}", folder, publicId);
             
             // Upload the file
-            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
             
             String resultPublicId = (String) uploadResult.get("public_id");
             String resultSecureUrl = (String) uploadResult.get("secure_url");
@@ -104,6 +105,7 @@ public class CloudinaryService {
      * @param publicId the public ID of the image to delete
      * @throws IOException if deletion fails
      */
+    @SuppressWarnings("unchecked")
     public void deleteImage(String publicId) throws IOException {
         if (publicId == null || publicId.isEmpty()) {
             throw new IllegalArgumentException("Public ID cannot be empty");
@@ -120,7 +122,7 @@ public class CloudinaryService {
             ));
             
             // Delete the resource
-            Map deleteResult = cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+            Map<String, Object> deleteResult = cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
             
             log.info("✓ Cloudinary deletion successful. Result: {}", deleteResult.get("result"));
         } catch (Exception e) {
