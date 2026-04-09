@@ -3,12 +3,18 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, User, LogOut, Settings, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import NotificationPanel from './NotificationPanel';
+import axiosInstance from "../../api/axiosInstance.js";
 
 const Navbar = ({ activeSection }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [notificationOpen, setNotificationOpen] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
     const navigate = useNavigate();
+
+    const userId = localStorage.getItem('userId') || sessionStorage.getItem('userId');
 
     const navItems = [
         { name: 'Home', path: '/' },
@@ -16,6 +22,19 @@ const Navbar = ({ activeSection }) => {
         { name: 'Bookings', path: '/bookings' },
         { name: 'Tickets', path: '/tickets' },
     ];
+
+    // Fetch unread count
+    const fetchUnreadCount = async () => {
+        if (!userId) return;
+        try {
+            const response = await axiosInstance.get(`/api/notifications/${userId}/count`);
+            if (response.data.success) {
+                setUnreadCount(response.data.unreadCount);
+            }
+        } catch (error) {
+            console.error('Error fetching unread count:', error);
+        }
+    };
 
     useEffect(() => {
         const handleScroll = () => {
@@ -25,6 +44,15 @@ const Navbar = ({ activeSection }) => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // Check if user is logged in
+    useEffect(() => {
+        setIsLoggedIn(!!userId);
+        if (userId) {
+            fetchUnreadCount();
+            const interval = setInterval(fetchUnreadCount, 30000); // Refresh every 30 seconds
+            return () => clearInterval(interval);
+        }
+    }, [userId]);
 
     return (
         <>
@@ -85,7 +113,20 @@ const Navbar = ({ activeSection }) => {
                                 {/* RIGHT: Auth & Mobile Menu */}
                                 <div className="flex justify-end items-center gap-3">
                                     {/* Desktop Auth Buttons */}
-                                    <div className="hidden md:flex gap-3">
+                                    <div className="hidden md:flex gap-3 items-center">
+                                        {isLoggedIn && (
+                                            <button
+                                                onClick={() => setNotificationOpen(!notificationOpen)}
+                                                className="relative p-2 rounded-full hover:bg-white/10 transition-all duration-300"
+                                            >
+                                                <Bell className="w-6 h-6 text-white" />
+                                                {unreadCount > 0 && (
+                                                    <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        )}
                                         {!isLoggedIn ? (
                                             <>
                                                 <Link to="/login" className="px-5 py-2 rounded-full font-semibold transition-all duration-300 border-2 border-[#F47C20] text-[#F47C20] hover:bg-[#F47C20] hover:text-white">
@@ -175,6 +216,13 @@ const Navbar = ({ activeSection }) => {
                     </AnimatePresence>
                 </div>
             </nav>
+
+            {/* Notification Panel */}
+            <NotificationPanel 
+                userId={userId}
+                isOpen={notificationOpen}
+                onClose={() => setNotificationOpen(false)}
+            />
         </>
     );
 };

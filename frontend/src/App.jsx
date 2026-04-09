@@ -22,6 +22,9 @@ import NotificationPage from './pages/admin/NotificationPage';
 import AdvancedFeatures from './pages/admin/AdvancedFeatures';
 import UserManagement from './pages/admin/UserManagement';
 
+import NotificationHistoryPage from './pages/NotificationHistoryPage';
+import NotificationPreferencesPage from './pages/NotificationPreferencesPage';
+
 
 const queryClient = new QueryClient();
 
@@ -36,6 +39,10 @@ function App() {
           <Route path="/bookings" element={<Bookings />} />
           <Route path="/tickets" element={<Tickets />} />
           <Route path="/profile" element={<Profilepage />} />
+          
+          {/* Notification Routes */}
+          <Route path="/notifications" element={<NotificationHistoryPage />} />
+          <Route path="/notification-preferences" element={<NotificationPreferencesPage />} />
 
 
           <Route path="/login" element={<Login />} />
