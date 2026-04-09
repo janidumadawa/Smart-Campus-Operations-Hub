@@ -5,10 +5,13 @@ import backend.service.CloudinaryService;
 import backend.service.ResourceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/resources")
@@ -43,6 +46,13 @@ public class ResourceController {
         return resources;
     }
 
+    // GET all available resources (for ticket form selection)
+    @GetMapping("/available")
+    public ResponseEntity<List<Resource>> getAvailableResources() {
+        List<Resource> availableResources = resourceService.getAvailableResources();
+        return ResponseEntity.ok(availableResources);
+    }
+
     // GET resource by ID
     @GetMapping("/{id}")
     public Resource getResourceById(@PathVariable String id) {
@@ -61,7 +71,8 @@ public class ResourceController {
             @RequestPart(value = "image", required = false) MultipartFile image) throws IOException {
         
         if (image != null && !image.isEmpty()) {
-            String publicId = cloudinaryService.uploadImage(image, "resources");
+            Map<String, Object> uploadResult = cloudinaryService.uploadImage(image, "resources", null);
+            String publicId = (String) uploadResult.get("public_id");
             resource.setImagePublicId(publicId);
         }
         
@@ -111,7 +122,8 @@ public class ResourceController {
                 }
             }
             // Upload new image
-            String newPublicId = cloudinaryService.uploadImage(image, "resources");
+            Map<String, Object> uploadResult = cloudinaryService.uploadImage(image, "resources", null);
+            String newPublicId = (String) uploadResult.get("public_id");
             existing.setImagePublicId(newPublicId);
         }
         // If no new image, keep the existing imagePublicId
@@ -166,7 +178,8 @@ public class ResourceController {
         }
 
         // Upload new image
-        String publicId = cloudinaryService.uploadImage(image, "resources");
+        Map<String, Object> uploadResult = cloudinaryService.uploadImage(image, "resources", null);
+        String publicId = (String) uploadResult.get("public_id");
         resource.setImagePublicId(publicId);
         
         Resource updatedResource = resourceService.updateResource(id, resource);

@@ -3,16 +3,24 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, User, LogOut, Settings, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+<<<<<<< HEAD
 import NotificationPanel from './NotificationPanel';
 import axiosInstance from "../../api/axiosInstance.js";
+=======
+import { useAuth } from "../../context/AuthContext";
+>>>>>>> origin/dev
 
 const Navbar = ({ activeSection }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+<<<<<<< HEAD
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [notificationOpen, setNotificationOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+=======
+>>>>>>> origin/dev
     const navigate = useNavigate();
+    const { user, logout } = useAuth();
 
     const userId = localStorage.getItem('userId') || sessionStorage.getItem('userId');
 
@@ -44,6 +52,7 @@ const Navbar = ({ activeSection }) => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+<<<<<<< HEAD
     // Check if user is logged in
     useEffect(() => {
         setIsLoggedIn(!!userId);
@@ -53,6 +62,12 @@ const Navbar = ({ activeSection }) => {
             return () => clearInterval(interval);
         }
     }, [userId]);
+=======
+    const handleLogout = () => {
+        logout();
+        navigate("/login");
+    };
+>>>>>>> origin/dev
 
     return (
         <>
@@ -113,6 +128,7 @@ const Navbar = ({ activeSection }) => {
                                 {/* RIGHT: Auth & Mobile Menu */}
                                 <div className="flex justify-end items-center gap-3">
                                     {/* Desktop Auth Buttons */}
+<<<<<<< HEAD
                                     <div className="hidden md:flex gap-3 items-center">
                                         {isLoggedIn && (
                                             <button
@@ -128,6 +144,10 @@ const Navbar = ({ activeSection }) => {
                                             </button>
                                         )}
                                         {!isLoggedIn ? (
+=======
+                                    <div className="hidden md:flex gap-3">
+                                        {!user ? (
+>>>>>>> origin/dev
                                             <>
                                                 <Link to="/login" className="px-5 py-2 rounded-full font-semibold transition-all duration-300 border-2 border-[#F47C20] text-[#F47C20] hover:bg-[#F47C20] hover:text-white">
                                                     Login
@@ -138,7 +158,12 @@ const Navbar = ({ activeSection }) => {
                                             </>
                                         ) : (
                                             <div className="flex items-center gap-3">
-                                                {/* User menu content */}
+                                                <button
+                                                    onClick={handleLogout}
+                                                    className="px-5 py-2 rounded-full font-semibold transition-all duration-300 bg-red-500 text-white hover:bg-red-600"
+                                                >
+                                                    Logout
+                                                </button>
                                             </div>
                                         )}
                                     </div>
@@ -181,7 +206,7 @@ const Navbar = ({ activeSection }) => {
                                             </Link>
                                         ))}
                                         <div className="border-t border-gray-100 my-2"></div>
-                                        {!isLoggedIn ? (
+                                        {!user ? (
                                             <>
                                                 <Link
                                                     to="/login"

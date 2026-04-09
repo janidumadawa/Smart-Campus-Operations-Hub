@@ -27,14 +27,12 @@ const Dashboardpage = () => {
   }, []);
 
   const stats = [
-    { title: 'Total Resources', value: totalResources, icon: Package, color: '#F47C20'},
-
-
-    { title: 'Active Bookings', value: '45', icon: Calendar, color: '#0A2342' },
-    { title: 'Pending Bookings', value: '12', icon: Clock, color: '#F47C20' },
-    { title: 'Open Tickets', value: '8', icon: AlertCircle, color: '#0A2342' },
-    { title: 'Resolved Tickets', value: '156', icon: CheckCircle, color: '#F47C20' },
-    { title: 'Active Users', value: '342', icon: Users, color: '#0A2342' },
+    { title: 'Total Resources', value: totalResources, icon: Package, color: '#F47C20', change: '+12%' },
+    { title: 'Active Bookings', value: '45', icon: Calendar, color: '#0A2342', change: '+8%' },
+    { title: 'Pending Bookings', value: '12', icon: Clock, color: '#F47C20', change: '-3%' },
+    { title: 'Open Tickets', value: '8', icon: AlertCircle, color: '#0A2342', change: '+2%' },
+    { title: 'Resolved Tickets', value: '156', icon: CheckCircle, color: '#F47C20', change: '+24%' },
+    { title: 'Active Users', value: '342', icon: Users, color: '#0A2342', change: '+15%' },
   ];
 
   const recentBookings = [
