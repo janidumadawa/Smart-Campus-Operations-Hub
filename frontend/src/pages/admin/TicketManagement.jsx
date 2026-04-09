@@ -1,51 +1,136 @@
 // frontend/src/pages/admin/TicketManagement.jsx
-import React, { useState } from 'react';
-import { Search, User, Clock, CheckCircle, AlertCircle, MessageSquare } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Search, Clock, CheckCircle, AlertCircle, MessageSquare, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTickets } from '../tickets/hooks/useTickets';
+import CommentSection from '../tickets/components/CommentSection';
+
+// TODO: Replace with real authentication system
+const ADMIN_USER = { id: 'admin-001', name: 'Admin User', role: 'ADMIN' };
+const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '');
 
 const TicketManagement = () => {
+  const { getAdminTickets, updateStatus, assignTechnician, loading, error } = useTickets();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [noteText, setNoteText] = useState('');
+  const [tickets, setTickets] = useState([]);
+  const [techId, setTechId] = useState('');
+  const [techName, setTechName] = useState('');
+  const [draftStatus, setDraftStatus] = useState('');
+  const [activeImg, setActiveImg] = useState(null);
 
-  const [tickets, setTickets] = useState([
-    { id: 1, title: 'Projector not working', resource: 'Lecture Hall A', category: 'Equipment', priority: 'High', status: 'OPEN', assignedTo: '', created: '2024-04-01', description: 'Projector showing blue screen' },
-    { id: 2, title: 'AC not cooling', resource: 'Computer Lab B', category: 'Facility', priority: 'Medium', status: 'IN_PROGRESS', assignedTo: 'John Tech', created: '2024-04-01', description: 'Temperature too high' },
-    { id: 3, title: 'Broken chair', resource: 'Meeting Room 1', category: 'Furniture', priority: 'Low', status: 'OPEN', assignedTo: '', created: '2024-04-02', description: 'Chair leg broken' },
-    { id: 4, title: 'Network issue', resource: 'Lecture Hall B', category: 'IT', priority: 'High', status: 'RESOLVED', assignedTo: 'Sarah Tech', created: '2024-03-30', description: 'WiFi not connecting', resolution: 'Router restarted' },
-  ]);
-
-  const technicians = ['John Tech', 'Sarah Tech', 'Mike Tech', 'Emma Tech'];
-
-  const handleAssign = (id, technician) => {
-    setTickets(tickets.map(ticket =>
-      ticket.id === id ? { ...ticket, assignedTo: technician, status: 'IN_PROGRESS' } : ticket
-    ));
-    toast.success(`Ticket assigned to ${technician}`);
-    setSelectedTicket(null);
+  const loadTickets = async () => {
+    const params = {};
+    if (filterStatus !== 'all') params.status = filterStatus;
+    const data = await getAdminTickets(params);
+    if (Array.isArray(data)) setTickets(data);
   };
 
-  const handleUpdateStatus = (id, newStatus) => {
-    setTickets(tickets.map(ticket =>
-      ticket.id === id ? { ...ticket, status: newStatus } : ticket
-    ));
-    toast.success(`Status updated to ${newStatus}`);
-  };
+  useEffect(() => {
+    loadTickets();
+  }, [filterStatus]);
 
-  const handleAddNote = (id) => {
-    if (noteText.trim()) {
-      toast.success('Note added successfully');
-      setNoteText('');
+  useEffect(() => {
+    setDraftStatus(selectedTicket?.status || '');
+  }, [selectedTicket]);
+
+  const filteredTickets = useMemo(() => (
+    tickets.filter((ticket) => {
+      const title = (ticket.title || '').toLowerCase();
+      const location = (ticket.location || '').toLowerCase();
+      const resource = (ticket.resourceId || '').toLowerCase();
+      const term = searchTerm.toLowerCase();
+      return title.includes(term) || location.includes(term) || resource.includes(term);
+    })
+  ), [tickets, searchTerm]);
+
+  const handleAssign = async () => {
+    if (!selectedTicket || !techId || !techName) return;
+    const updated = await assignTechnician(selectedTicket.id, {
+      technicianId: techId,
+      technicianName: techName,
+    });
+    if (updated) {
+      toast.success(`Ticket assigned to ${techName}`);
+      setSelectedTicket(updated);
+      setTechId('');
+      setTechName('');
+      await loadTickets();
     }
   };
 
-  const filteredTickets = tickets.filter(ticket => {
-    const matchesSearch = ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          ticket.resource.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || ticket.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+  const handleUpdateStatus = async (newStatus) => {
+    if (!selectedTicket) return;
+
+    const body = { status: newStatus };
+    if (newStatus === 'REJECTED') body.rejectionReason = noteText;
+    if (newStatus === 'RESOLVED') body.resolutionNotes = noteText;
+
+    const updated = await updateStatus(selectedTicket.id, body);
+    if (updated) {
+      toast.success(`Status updated to ${newStatus}`);
+      setSelectedTicket(updated);
+      setNoteText('');
+      await loadTickets();
+    }
+  };
+
+  const handleTicketCommentsUpdate = (updatedTicket) => {
+    setSelectedTicket(updatedTicket);
+    setTickets((prev) => prev.map((t) => (t.id === updatedTicket.id ? updatedTicket : t)));
+  };
+
+  const handleSaveChanges = async () => {
+    if (!selectedTicket) return;
+
+    let updatedTicket = selectedTicket;
+    let didChange = false;
+
+    if (techId && techName) {
+      const assigned = await assignTechnician(updatedTicket.id, {
+        technicianId: techId,
+        technicianName: techName,
+      });
+      if (assigned) {
+        updatedTicket = assigned;
+        didChange = true;
+        setTechId('');
+        setTechName('');
+      }
+    }
+
+    let targetStatus = draftStatus || updatedTicket.status;
+    if (targetStatus === 'OPEN' && updatedTicket.status === 'IN_PROGRESS') {
+      targetStatus = 'IN_PROGRESS';
+      setDraftStatus('IN_PROGRESS');
+    }
+
+    if (targetStatus !== updatedTicket.status) {
+      const body = { status: targetStatus };
+      if (targetStatus === 'REJECTED') body.rejectionReason = noteText;
+      if (targetStatus === 'RESOLVED') body.resolutionNotes = noteText;
+
+      const statusUpdated = await updateStatus(updatedTicket.id, body);
+      if (statusUpdated) {
+        updatedTicket = statusUpdated;
+        didChange = true;
+        setNoteText('');
+      } else {
+        return;
+      }
+    }
+
+    if (didChange) {
+      toast.success('Ticket changes saved');
+      setSelectedTicket(updatedTicket);
+      setTickets((prev) => prev.map((t) => (t.id === updatedTicket.id ? updatedTicket : t)));
+      await loadTickets();
+    } else {
+      toast('No changes to save');
+    }
+  };
 
   const getStatusBadge = (status) => {
     const statuses = {
@@ -59,11 +144,23 @@ const TicketManagement = () => {
 
   const getPriorityBadge = (priority) => {
     const priorities = {
-      'High': 'bg-red-100 text-red-800',
-      'Medium': 'bg-yellow-100 text-yellow-800',
-      'Low': 'bg-green-100 text-green-800'
+      'HIGH': 'bg-red-100 text-red-800',
+      'MEDIUM': 'bg-yellow-100 text-yellow-800',
+      'LOW': 'bg-green-100 text-green-800',
+      'CRITICAL': 'bg-purple-100 text-purple-800',
     };
-    return <span className={`px-2 py-1 text-xs rounded-full ${priorities[priority]}`}>{priority}</span>;
+    return <span className={`px-2 py-1 text-xs rounded-full ${priorities[priority] || 'bg-gray-100 text-gray-700'}`}>{priority}</span>;
+  };
+
+  const getAttachmentSrc = (url) => {
+    if (!url) return '';
+
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+
+    const normalized = url.startsWith('/') ? url : `/${url}`;
+    return `${API_ORIGIN}${normalized}`;
   };
 
   return (
@@ -142,6 +239,7 @@ const TicketManagement = () => {
 
       {/* Tickets Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {error && <p className="px-6 py-3 text-sm text-red-600">{error}</p>}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
@@ -159,13 +257,13 @@ const TicketManagement = () => {
             <tbody className="divide-y divide-gray-100">
               {filteredTickets.map((ticket) => (
                 <tr key={ticket.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm text-gray-600">#{ticket.id}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">#{ticket.id?.slice(-6)}</td>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{ticket.title}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{ticket.resource}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{ticket.resourceId || ticket.location || '-'}</td>
                   <td className="px-6 py-4">{getPriorityBadge(ticket.priority)}</td>
                   <td className="px-6 py-4">{getStatusBadge(ticket.status)}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{ticket.assignedTo || 'Unassigned'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{ticket.created}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{ticket.assignedTechnicianName || 'Unassigned'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{ticket.createdAt?.slice(0, 10) || '-'}</td>
                   <td className="px-6 py-4">
                     <button
                       onClick={() => setSelectedTicket(ticket)}
@@ -186,7 +284,7 @@ const TicketManagement = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white">
-              <h2 className="text-xl font-semibold text-[#0A2342]">Ticket #{selectedTicket.id}</h2>
+              <h2 className="text-xl font-semibold text-[#0A2342]">Ticket #{selectedTicket.id?.slice(-6)}</h2>
               <button onClick={() => setSelectedTicket(null)} className="p-1 hover:bg-gray-100 rounded">
                 <X className="w-5 h-5 text-gray-500" />
               </button>
@@ -201,7 +299,7 @@ const TicketManagement = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs text-gray-500">Resource</label>
-                  <p className="text-sm font-medium text-gray-900">{selectedTicket.resource}</p>
+                  <p className="text-sm font-medium text-gray-900">{selectedTicket.resourceId || selectedTicket.location || '-'}</p>
                 </div>
                 <div>
                   <label className="text-xs text-gray-500">Category</label>
@@ -214,44 +312,58 @@ const TicketManagement = () => {
                 <div>
                   <label className="text-xs text-gray-500">Status</label>
                   <select
-                    value={selectedTicket.status}
-                    onChange={(e) => {
-                      handleUpdateStatus(selectedTicket.id, e.target.value);
-                      setSelectedTicket({ ...selectedTicket, status: e.target.value });
-                    }}
+                    value={draftStatus}
+                    onChange={(e) => setDraftStatus(e.target.value)}
                     className="mt-1 px-3 py-1 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#F47C20]"
                   >
                     <option value="OPEN">Open</option>
                     <option value="IN_PROGRESS">In Progress</option>
                     <option value="RESOLVED">Resolved</option>
                     <option value="CLOSED">Closed</option>
+                    <option value="REJECTED">Rejected</option>
                   </select>
                 </div>
               </div>
 
               {/* Assign Technician */}
-              {(!selectedTicket.assignedTo || selectedTicket.assignedTo === '') && (
+              {(!selectedTicket.assignedTechnicianName || selectedTicket.assignedTechnicianName === '') && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Assign Technician</label>
                   <div className="flex gap-2">
-                    <select
-                      onChange={(e) => handleAssign(selectedTicket.id, e.target.value)}
+                    <input
+                      value={techId}
+                      onChange={(e) => setTechId(e.target.value)}
+                      placeholder="Technician ID"
                       className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#F47C20] text-sm"
+                    />
+                    <input
+                      value={techName}
+                      onChange={(e) => setTechName(e.target.value)}
+                      placeholder="Technician Name"
+                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#F47C20] text-sm"
+                    />
+                    <button
+                      onClick={handleAssign}
+                      disabled={loading}
+                      className="px-4 py-2 bg-[#0A2342] text-white rounded-lg text-sm hover:bg-blue-900 disabled:opacity-60"
                     >
-                      <option value="">Select Technician</option>
-                      {technicians.map(tech => (
-                        <option key={tech} value={tech}>{tech}</option>
-                      ))}
-                    </select>
+                      Assign
+                    </button>
                   </div>
                 </div>
               )}
 
               {/* Resolution Notes */}
-              {selectedTicket.resolution && (
+              {selectedTicket.resolutionNotes && (
                 <div>
                   <label className="text-xs text-gray-500">Resolution Notes</label>
-                  <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg mt-1">{selectedTicket.resolution}</p>
+                  <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg mt-1">{selectedTicket.resolutionNotes}</p>
+                </div>
+              )}
+              {selectedTicket.rejectionReason && (
+                <div>
+                  <label className="text-xs text-gray-500">Rejection Reason</label>
+                  <p className="text-sm text-red-700 bg-red-50 p-3 rounded-lg mt-1">{selectedTicket.rejectionReason}</p>
                 </div>
               )}
 
@@ -265,15 +377,48 @@ const TicketManagement = () => {
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#F47C20] text-sm resize-none"
                   placeholder="Add resolution notes or comments..."
                 />
+                <p className="mt-2 text-xs text-gray-500">
+                  This note is required when moving to RESOLVED or REJECTED.
+                </p>
+              </div>
+
+              <div className="flex justify-end">
                 <button
-                  onClick={() => handleAddNote(selectedTicket.id)}
-                  className="mt-2 px-4 py-2 bg-[#F47C20] text-white rounded-lg text-sm hover:bg-[#E06A10] transition-colors"
+                  onClick={handleSaveChanges}
+                  disabled={loading}
+                  className="px-4 py-2 bg-[#F47C20] text-white rounded-lg text-sm hover:bg-[#E06A10] transition-colors disabled:opacity-60"
                 >
-                  Add Note
+                  Save Changes
                 </button>
+              </div>
+
+              {/* Shared Comments: user + admin */}
+              <div className="border-t border-gray-100 pt-4">
+                <CommentSection
+                  ticket={selectedTicket}
+                  onUpdate={handleTicketCommentsUpdate}
+                  currentUser={ADMIN_USER}
+                />
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Lightbox — FIXED: only renders when activeImg is a non-empty string */}
+      {activeImg && typeof activeImg === 'string' && (
+        <div
+          onClick={() => setActiveImg(null)}
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] cursor-pointer"
+        >
+          <img
+            src={getAttachmentSrc(activeImg)}
+            alt="Attachment preview"
+            className="max-w-3xl max-h-[85vh] rounded-xl"
+            onError={(e) => {
+              console.error('Lightbox image failed to load:', e.target.src);
+            }}
+          />
         </div>
       )}
     </div>

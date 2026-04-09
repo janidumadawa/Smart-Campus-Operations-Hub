@@ -39,22 +39,54 @@ function App() {
         <Router>
           <Routes>
             <Route path="/" element={<Home />} />
-
             <Route path="/facilities" element={<Facilities />} />
 
-            {/* Booking page should open directly */}
+            {/* Public Routes */}
             <Route path="/bookings" element={<Bookings />} />
-
-            {/* Protected User Routes */}
-            <Route path="/bookings/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
-            <Route path="/bookings/details/:id" element={<ProtectedRoute><BookingDetails /></ProtectedRoute>} />
-            <Route path="/bookings/confirmation" element={<ProtectedRoute><BookingConfirmation /></ProtectedRoute>} />
-            <Route path="/tickets" element={<ProtectedRoute><Tickets /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Profilepage /></ProtectedRoute>} />
-
-            {/* Auth */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+
+            {/* Protected User Routes */}
+            <Route
+              path="/bookings/my-bookings"
+              element={
+                <ProtectedRoute>
+                  <MyBookings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/bookings/details/:id"
+              element={
+                <ProtectedRoute>
+                  <BookingDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/bookings/confirmation"
+              element={
+                <ProtectedRoute>
+                  <BookingConfirmation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tickets"
+              element={
+                <ProtectedRoute>
+                  <Tickets />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profilepage />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Admin Routes */}
             <Route
@@ -74,7 +106,6 @@ function App() {
               <Route path="advanced" element={<AdvancedFeatures />} />
               <Route path="users" element={<UserManagement />} />
             </Route>
-
           </Routes>
         </Router>
       </AuthProvider>
