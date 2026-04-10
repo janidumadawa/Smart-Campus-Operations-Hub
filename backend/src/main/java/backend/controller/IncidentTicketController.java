@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
 
+@CrossOrigin(originPatterns = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/tickets")
 @RequiredArgsConstructor
@@ -54,10 +55,14 @@ public class IncidentTicketController {
             @RequestParam(required = false) String technicianId,
             @RequestParam(required = false) String priority) {
 
-        if (status       != null) return ResponseEntity.ok(ticketService.getTicketsByStatus(status));
-        if (userId       != null) return ResponseEntity.ok(ticketService.getTicketsByUser(userId));
-        if (technicianId != null) return ResponseEntity.ok(ticketService.getTicketsByTechnician(technicianId));
-        if (priority     != null) return ResponseEntity.ok(ticketService.getTicketsByPriority(priority));
+        if (status != null)
+            return ResponseEntity.ok(ticketService.getTicketsByStatus(status));
+        if (userId != null)
+            return ResponseEntity.ok(ticketService.getTicketsByUser(userId));
+        if (technicianId != null)
+            return ResponseEntity.ok(ticketService.getTicketsByTechnician(technicianId));
+        if (priority != null)
+            return ResponseEntity.ok(ticketService.getTicketsByPriority(priority));
         return ResponseEntity.ok(ticketService.getAllTickets());
     }
 
