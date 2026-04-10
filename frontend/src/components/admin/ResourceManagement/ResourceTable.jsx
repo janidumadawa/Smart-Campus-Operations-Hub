@@ -11,7 +11,7 @@ const ResourceTable = ({
   onDelete,
   onToggleStatus,
   onView,
-  isAdmin  // ADD THIS PROP
+  isAdmin  
 }) => {
   const getStatusBadgeClass = (status) => {
     return status === 'AVAILABLE'

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
-import axiosInstance from '../../../utils/axiosConfig';  // ADD THIS IMPORT
+import axiosInstance from '../../../utils/axiosConfig';  
 
 const ResourceModal = ({ isOpen, onClose, onSuccess, editingResource }) => {
   // REMOVE apiBaseUrl from props
