@@ -1,7 +1,7 @@
-// backend\src\main\java\backend\service\BookingService.java
 package backend.service;
 
 import backend.dto.BookingRequestDTO;
+import backend.dto.BookingReviewDTO;
 import backend.enums.BookingStatus;
 import backend.exception.ConflictException;
 import backend.exception.ResourceNotFoundException;
@@ -12,6 +12,7 @@ import backend.repository.ResourceRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class BookingService {
@@ -25,30 +26,30 @@ public class BookingService {
     }
 
     public Booking createBooking(BookingRequestDTO dto) {
-        if (dto.getResourceId() == null || dto.getResourceId().trim().isEmpty()) {
-            throw new IllegalArgumentException("Resource ID is required.");
-        }
-
+        // Validate resource exists
         Resource resource = resourceRepository.findById(dto.getResourceId())
-                .orElseThrow(() -> new ResourceNotFoundException("Resource not found."));
+                .orElseThrow(() -> new IllegalArgumentException("Resource not found"));
 
+        // Check if resource is available
         if ("OUT_OF_SERVICE".equalsIgnoreCase(resource.getStatus())) {
-            throw new IllegalArgumentException("Selected resource is out of service.");
+            throw new IllegalArgumentException("Resource is out of service");
         }
 
-        List<Booking> existingBookings = bookingRepository.findByResourceIdAndDate(resource.getId(), dto.getDate());
+        // Check for time conflicts
+        List<Booking> existing = bookingRepository.findByResourceIdAndDate(
+                dto.getResourceId(), dto.getDate());
 
-        boolean hasConflict = existingBookings.stream().anyMatch(booking ->
-                booking.getStatus() != BookingStatus.REJECTED &&
-                booking.getStatus() != BookingStatus.CANCELLED &&
-                dto.getStartTime().compareTo(booking.getEndTime()) < 0 &&
-                dto.getEndTime().compareTo(booking.getStartTime()) > 0
-        );
+        boolean hasConflict = existing.stream()
+                .filter(b -> b.getStatus() != BookingStatus.REJECTED)
+                .filter(b -> b.getStatus() != BookingStatus.CANCELLED)
+                .anyMatch(b -> timeOverlaps(dto.getStartTime(), dto.getEndTime(), 
+                                           b.getStartTime(), b.getEndTime()));
 
         if (hasConflict) {
-            throw new ConflictException("Booking conflict detected for this resource and time.");
+            throw new ConflictException("Time slot already booked for this resource");
         }
 
+        // Create booking
         Booking booking = new Booking();
         booking.setResourceId(resource.getId());
         booking.setResourceName(resource.getName());
@@ -60,9 +61,12 @@ public class BookingService {
         booking.setRequestedBy(dto.getRequestedBy());
         booking.setEmail(dto.getEmail());
         booking.setStatus(BookingStatus.PENDING);
-        booking.setAdminReason("");
 
         return bookingRepository.save(booking);
+    }
+
+    private boolean timeOverlaps(String start1, String end1, String start2, String end2) {
+        return start1.compareTo(end2) < 0 && end1.compareTo(start2) > 0;
     }
 
     public List<Booking> getAllBookings() {
@@ -74,6 +78,39 @@ public class BookingService {
     }
 
     public Optional<Booking> getBookingById(String id) {
-    return bookingRepository.findById(id);
-}
+        return bookingRepository.findById(id);
+    }
+
+    public Booking reviewBooking(String id, BookingReviewDTO review) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new IllegalStateException("Only PENDING bookings can be reviewed");
+        }
+
+        booking.setStatus(review.getStatus());
+        if (review.getAdminReason() != null) {
+            booking.setAdminReason(review.getAdminReason());
+        }
+
+        return bookingRepository.save(booking);
+    }
+
+    public Booking cancelBooking(String id, String email) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+
+        if (!booking.getEmail().equals(email)) {
+            throw new SecurityException("Not authorized to cancel this booking");
+        }
+
+        if (booking.getStatus() != BookingStatus.PENDING && 
+            booking.getStatus() != BookingStatus.APPROVED) {
+            throw new IllegalStateException("Cannot cancel this booking");
+        }
+
+        booking.setStatus(BookingStatus.CANCELLED);
+        return bookingRepository.save(booking);
+    }
 }

@@ -1,4 +1,3 @@
-// backend\src\main\java\backend\service\ResourceServiceImpl.java
 package backend.service;
 
 import backend.model.Resource;
@@ -26,14 +25,10 @@ public class ResourceServiceImpl implements ResourceService {
     public Page<Resource> getAllResources(int page, int size, String type, String location, String status) {
         PageRequest pageable = PageRequest.of(page, size);
         
-        // If search term is provided, search in both name and location
         if (location != null && !location.isEmpty()) {
-            // Search in name OR location
-            return resourceRepository.findByNameContainingIgnoreCaseOrLocationContainingIgnoreCase(
-                location, location, pageable);
+            return resourceRepository.findByNameContainingIgnoreCase(location, pageable);
         }
         
-        // Apply type and status filters
         if (type != null && !type.isEmpty() && status != null && !status.isEmpty()) {
             return resourceRepository.findByTypeAndStatus(type, status, pageable);
         } else if (type != null && !type.isEmpty()) {
@@ -46,6 +41,11 @@ public class ResourceServiceImpl implements ResourceService {
     }
 
     @Override
+    public List<Resource> getAvailableResources() {
+        return resourceRepository.findByStatus("AVAILABLE");
+    }
+
+    @Override
     public Resource getResourceById(String id) {
         if (id == null) return null;
         return resourceRepository.findById(id).orElse(null);
@@ -55,11 +55,6 @@ public class ResourceServiceImpl implements ResourceService {
     public Resource createResource(Resource resource) {
         if (resource == null) return null;
         return resourceRepository.save(resource);
-    }
-
-    @Override
-    public List<Resource> getAvailableResources() {
-        return resourceRepository.findByStatus("AVAILABLE", PageRequest.of(0, 100)).getContent();
     }
 
     @Override
@@ -84,32 +79,21 @@ public class ResourceServiceImpl implements ResourceService {
         resourceRepository.deleteById(id);
     }
 
-    /**
-     * Upload an image for a resource to Cloudinary
-     * @param id the resource ID
-     * @param image the image file to upload
-     * @return the updated resource with imagePublicId set
-     * @throws IOException if upload fails
-     */
     public Resource uploadResourceImage(String id, MultipartFile image) throws IOException {
         Resource resource = getResourceById(id);
         if (resource == null) {
             throw new IllegalArgumentException("Resource not found with id: " + id);
         }
 
-        // Delete old image if it exists
         if (resource.getImagePublicId() != null && !resource.getImagePublicId().isEmpty()) {
             try {
                 cloudinaryService.deleteImage(resource.getImagePublicId());
             } catch (IOException e) {
-                // Log but don't fail if old image deletion fails
                 System.err.println("Warning: Failed to delete old image: " + e.getMessage());
             }
         }
 
-        // Upload new image to Cloudinary
         Map<String, Object> uploadResult = cloudinaryService.uploadImage(image, "resources", null);
-        
         String publicId = (String) uploadResult.get("public_id");
         resource.setImagePublicId(publicId);
 

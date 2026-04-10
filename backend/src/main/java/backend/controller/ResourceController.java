@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @CrossOrigin(originPatterns = "*", maxAge = 3600)
@@ -206,5 +207,12 @@ public class ResourceController {
         }
 
         return ResponseEntity.ok("");
+    }
+
+    // GET all available resources (for ticket form selection and booking)
+    @GetMapping("/available")
+    public ResponseEntity<List<Resource>> getAvailableResources() {
+        List<Resource> availableResources = resourceService.getAvailableResources();
+        return ResponseEntity.ok(availableResources);
     }
 }

@@ -1,17 +1,28 @@
 package backend.dto;
 
+import backend.enums.BookingStatus;
+
 public class BookingReviewDTO {
 
-    private String reason;
+    private BookingStatus status;
+    private String adminReason;
 
     public BookingReviewDTO() {
     }
 
-    public String getReason() {
-        return reason;
+    public BookingStatus getStatus() {
+        return status;
     }
 
-    public void setReason(String reason) {
-        this.reason = reason;
+    public void setStatus(BookingStatus status) {
+        this.status = status;
+    }
+
+    public String getAdminReason() {
+        return adminReason;
+    }
+
+    public void setAdminReason(String adminReason) {
+        this.adminReason = adminReason;
     }
 }
