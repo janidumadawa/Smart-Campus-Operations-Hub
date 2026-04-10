@@ -107,4 +107,20 @@ public class AuthController {
         
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/technicians")
+    public ResponseEntity<?> getTechnicians() {
+        List<User> technicians = userRepository.findAll().stream()
+                .filter(user -> user.getRoles().contains(Role.ROLE_TECHNICIAN))
+                .map(user -> {
+                    User technician = new User();
+                    technician.setId(user.getId());
+                    technician.setName(user.getName());
+                    technician.setEmail(user.getEmail());
+                    return technician;
+                })
+                .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(technicians);
+    }
 }

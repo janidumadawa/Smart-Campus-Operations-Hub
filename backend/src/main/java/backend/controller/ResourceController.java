@@ -13,9 +13,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+@CrossOrigin(originPatterns = "*", maxAge = 3600)
 @RestController
-@RequestMapping("/resources")
-@CrossOrigin(origins = "*")
+@RequestMapping("/api/resources")
 public class ResourceController {
 
     @Autowired
@@ -32,9 +32,9 @@ public class ResourceController {
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String location,
             @RequestParam(required = false) String status) {
-        
+
         Page<Resource> resources = resourceService.getAllResources(page, size, type, location, status);
-        
+
         // Convert imagePublicId to full URL for each resource
         resources.getContent().forEach(resource -> {
             if (resource.getImagePublicId() != null && !resource.getImagePublicId().isEmpty()) {
@@ -42,7 +42,7 @@ public class ResourceController {
                 resource.setImagePublicId(imageUrl);
             }
         });
-        
+
         return resources;
     }
 
@@ -69,20 +69,20 @@ public class ResourceController {
     public Resource createResource(
             @RequestPart("resource") Resource resource,
             @RequestPart(value = "image", required = false) MultipartFile image) throws IOException {
-        
+
         if (image != null && !image.isEmpty()) {
             Map<String, Object> uploadResult = cloudinaryService.uploadImage(image, "resources", null);
             String publicId = (String) uploadResult.get("public_id");
             resource.setImagePublicId(publicId);
         }
-        
+
         Resource savedResource = resourceService.createResource(resource);
-        
+
         // Return with full URL
         if (savedResource.getImagePublicId() != null && !savedResource.getImagePublicId().isEmpty()) {
             savedResource.setImagePublicId(cloudinaryService.getImageUrl(savedResource.getImagePublicId()));
         }
-        
+
         return savedResource;
     }
 
@@ -98,7 +98,7 @@ public class ResourceController {
             @PathVariable String id,
             @RequestPart("resource") Resource resourceUpdate,
             @RequestPart(value = "image", required = false) MultipartFile image) throws IOException {
-        
+
         Resource existing = resourceService.getResourceById(id);
         if (existing == null) {
             throw new RuntimeException("Resource not found with id: " + id);
@@ -129,12 +129,12 @@ public class ResourceController {
         // If no new image, keep the existing imagePublicId
 
         Resource updatedResource = resourceService.updateResource(id, existing);
-        
+
         // Return with full URL
         if (updatedResource.getImagePublicId() != null && !updatedResource.getImagePublicId().isEmpty()) {
             updatedResource.setImagePublicId(cloudinaryService.getImageUrl(updatedResource.getImagePublicId()));
         }
-        
+
         return updatedResource;
     }
 
@@ -145,7 +145,7 @@ public class ResourceController {
         if (existing == null) {
             throw new RuntimeException("Resource not found with id: " + id);
         }
-        
+
         // Update fields but keep existing image
         existing.setName(resourceUpdate.getName());
         existing.setType(resourceUpdate.getType());
@@ -153,7 +153,7 @@ public class ResourceController {
         existing.setCapacity(resourceUpdate.getCapacity());
         existing.setStatus(resourceUpdate.getStatus());
         // Keep existing imagePublicId
-        
+
         return resourceService.updateResource(id, existing);
     }
 
@@ -162,7 +162,7 @@ public class ResourceController {
     public Resource uploadResourceImage(
             @PathVariable String id,
             @RequestParam("image") MultipartFile image) throws IOException {
-        
+
         Resource resource = resourceService.getResourceById(id);
         if (resource == null) {
             throw new RuntimeException("Resource not found with id: " + id);
@@ -181,14 +181,14 @@ public class ResourceController {
         Map<String, Object> uploadResult = cloudinaryService.uploadImage(image, "resources", null);
         String publicId = (String) uploadResult.get("public_id");
         resource.setImagePublicId(publicId);
-        
+
         Resource updatedResource = resourceService.updateResource(id, resource);
-        
+
         // Return with full URL
         if (updatedResource.getImagePublicId() != null && !updatedResource.getImagePublicId().isEmpty()) {
             updatedResource.setImagePublicId(cloudinaryService.getImageUrl(updatedResource.getImagePublicId()));
         }
-        
+
         return updatedResource;
     }
 

@@ -1,5 +1,9 @@
 package backend.enums;
 
-public class ResourceStatus {
-    
+public enum ResourceStatus {
+    AVAILABLE,
+    IN_USE,
+    MAINTENANCE,
+    OUT_OF_SERVICE,
+    ACTIVE
 }

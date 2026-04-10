@@ -1,67 +1,67 @@
+// frontend/src/pages/tickets/hooks/useTickets.js
 import { useState, useCallback } from "react";
+import axiosInstance from '../../../utils/axiosConfig';
 
-const BASE = "http://localhost:8080/api/tickets";
-const RESOURCES_BASE = "http://localhost:8080/resources";
 
 export function useTickets() {
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState(null);
+  const [error, setError] = useState(null);
+  
 
-const request = useCallback(async (url, options = {}) => {
-  setLoading(true);
-  setError(null);
-  try {
-    const res = await fetch(url, {
-      headers: { "Content-Type": "application/json" },
-      ...options,
-    });
-    if (!res.ok) {
-      // Try to parse error body safely
-      let errMsg = `Server error: ${res.status}`;
-      try {
-        const data = await res.json();
-        errMsg = data.error || errMsg;
-      } catch {}
-      throw new Error(errMsg);
+  const request = useCallback(async (method, url, config = {}) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await axiosInstance({
+        method,
+        url,
+        ...config
+      });
+      return response.data;
+    } catch (e) {
+      const errorMsg = e.response?.data?.error || e.message || 'Request failed';
+      setError(errorMsg);
+      return null;
+    } finally {
+      setLoading(false);
     }
-    return await res.json();
-  } catch (e) {
-    setError(e.message);
-    return null; // instead of throwing, return null so UI can handle gracefully
-  } finally {
-    setLoading(false);
-  }
-}, []);
+  }, []);
 
-  const getAllTickets    = useCallback((params = {}) => {
-    const q = new URLSearchParams(params).toString();
-    return request(`${BASE}${q ? "?" + q : ""}`);
+  const getAllTickets = useCallback((params = {}) => {
+    console.log('getAllTickets called with params:', params); // ADD THIS LOG
+    return request('get', '/tickets', { params });
   }, [request]);
-  
-  const getAdminTickets  = useCallback((params = {}) => {
-    const q = new URLSearchParams(params).toString();
-    return request(`${BASE}/admin${q ? "?" + q : ""}`);
-  }, [request]);
-  
-  const getTicketById   = useCallback((id) => request(`${BASE}/${id}`), [request]);
-  const getSla          = useCallback((id) => request(`${BASE}/${id}/sla`), [request]);
-  const createTicket    = useCallback((body) => request(BASE, { method: "POST", body: JSON.stringify(body) }), [request]);
-  const updateStatus    = useCallback((id, body) => request(`${BASE}/${id}/status`,  { method: "PATCH", body: JSON.stringify(body) }), [request]);
-  const assignTechnician= useCallback((id, body) => request(`${BASE}/${id}/assign`,  { method: "PATCH", body: JSON.stringify(body) }), [request]);
-  const deleteTicket    = useCallback((id) => request(`${BASE}/${id}`,         { method: "DELETE" }), [request]);
-  const addComment      = useCallback((id, body) => request(`${BASE}/${id}/comments`,{ method: "POST",  body: JSON.stringify(body) }), [request]);
-  const editComment     = useCallback((tid, cid, requesterId, content) =>
-    request(`${BASE}/${tid}/comments/${cid}?requesterId=${requesterId}`, {
-      method: "PUT", body: JSON.stringify({ content }),
-    }), [request]);
-  const deleteComment   = useCallback((tid, cid, requesterId, isAdmin = false) =>
-    request(`${BASE}/${tid}/comments/${cid}?requesterId=${requesterId}&isAdmin=${isAdmin}`, {
-      method: "DELETE",
-    }), [request]);
 
-  // Resource endpoints
-  const getAvailableResources = useCallback(() => request(`${RESOURCES_BASE}/available`), [request]);
-  const getResourceById = useCallback((id) => request(`${RESOURCES_BASE}/${id}`), [request]);
+  const getAdminTickets = useCallback((params = {}) => {
+    return request('get', '/tickets/admin', { params });
+  }, [request]);
+
+  const getTicketById = useCallback((id) => request('get', `/tickets/${id}`), [request]);
+  
+  const getSla = useCallback((id) => request('get', `/tickets/${id}/sla`), [request]);
+  
+  const createTicket = useCallback((body) => request('post', '/tickets', { data: body }), [request]);
+  
+  const updateStatus = useCallback((id, body) => request('patch', `/tickets/${id}/status`, { data: body }), [request]);
+  
+  const assignTechnician = useCallback((id, body) => request('patch', `/tickets/${id}/assign`, { data: body }), [request]);
+  
+  const deleteTicket = useCallback((id) => request('delete', `/tickets/${id}`), [request]);
+  
+  const addComment = useCallback((id, body) => request('post', `/tickets/${id}/comments`, { data: body }), [request]);
+  
+  const editComment = useCallback((tid, cid, requesterId, content) =>
+    request('put', `/tickets/${tid}/comments/${cid}?requesterId=${requesterId}`, { data: { content } }), [request]);
+  
+  const deleteComment = useCallback((tid, cid, requesterId, isAdmin = false) =>
+    request('delete', `/tickets/${tid}/comments/${cid}?requesterId=${requesterId}&isAdmin=${isAdmin}`), [request]);
+
+  const getAvailableResources = useCallback(() => request('get', '/resources/available'), [request]);
+  
+  const getResourceById = useCallback((id) => request('get', `/resources/${id}`), [request]);
+
+  const getTechnicians = useCallback(() => request('get', '/auth/technicians'), [request]);
+
 
   const uploadAttachments = async (id, files) => {
     setLoading(true);
@@ -69,12 +69,13 @@ const request = useCallback(async (url, options = {}) => {
     try {
       const form = new FormData();
       files.forEach((f) => form.append("files", f));
-      const res  = await fetch(`${BASE}/${id}/attachments`, { method: "POST", body: form });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
-      return data;
+      const response = await axiosInstance.post(`/tickets/${id}/attachments`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return response.data;
     } catch (e) {
-      setError(e.message);
+      const errorMsg = e.response?.data?.error || 'Upload failed';
+      setError(errorMsg);
       throw e;
     } finally {
       setLoading(false);
@@ -86,6 +87,6 @@ const request = useCallback(async (url, options = {}) => {
     getAllTickets, getAdminTickets, getTicketById, getSla,
     createTicket, updateStatus, assignTechnician, deleteTicket,
     addComment, editComment, deleteComment, uploadAttachments,
-    getAvailableResources, getResourceById,
+    getAvailableResources, getResourceById,getTechnicians
   };
 }
