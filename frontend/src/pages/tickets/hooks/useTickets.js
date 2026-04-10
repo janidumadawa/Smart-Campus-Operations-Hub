@@ -28,7 +28,7 @@ export function useTickets() {
   }, []);
 
   const getAllTickets = useCallback((params = {}) => {
-    console.log('getAllTickets called with params:', params); // ADD THIS LOG
+    console.log('getAllTickets called with params:', params); 
     return request('get', '/tickets', { params });
   }, [request]);
 
