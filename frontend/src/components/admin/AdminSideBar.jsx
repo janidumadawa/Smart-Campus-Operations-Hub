@@ -33,8 +33,8 @@ const AdminSideBar = ({ isOpen, onClose }) => {
       return [
         ...baseItems,
         { name: 'Resources', path: '/admin/resources', icon: Package, canEdit: true },
-        { name: 'Advanced', path: '/admin/advanced', icon: BarChart3 },
         { name: 'Users', path: '/admin/users', icon: Users },
+        { name: 'Advanced', path: '/admin/advanced', icon: BarChart3 },
       ];
     } else if (isTechnician()) {
       return [
