@@ -1,3 +1,4 @@
+// backend/src/main/java/backend/model/Resource.java
 package backend.model;
 
 import org.springframework.data.annotation.Id;

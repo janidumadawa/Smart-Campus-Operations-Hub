@@ -59,7 +59,7 @@ public class ResourceServiceImpl implements ResourceService {
 
     @Override
     public List<Resource> getAvailableResources() {
-        return resourceRepository.findByStatus("AVAILABLE", null).getContent();
+        return resourceRepository.findByStatus("AVAILABLE", PageRequest.of(0, 100)).getContent();
     }
 
     @Override

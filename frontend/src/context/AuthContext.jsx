@@ -1,5 +1,6 @@
+// frontend/src/context/AuthContext.jsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
@@ -21,9 +22,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUser = async () => {
     try {
-      const response = await axios.get('http://localhost:8080/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axiosInstance.get('/auth/me');
       setUser(response.data);
     } catch (error) {
       console.error('Failed to fetch user:', error);
@@ -35,11 +34,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:8080/api/auth/login', {
-        email,
-        password
-      });
-      
+      const response = await axiosInstance.post('/auth/login', { email, password });
       const { token, id, email: userEmail, name, roles } = response.data;
       
       localStorage.setItem('token', token);
@@ -48,10 +43,7 @@ export const AuthProvider = ({ children }) => {
       const userData = { id, email: userEmail, name, roles };
       setUser(userData);
       
-      toast.success('Login successful! Redirecting...', {
-        icon: '🎉',
-        duration: 2000,
-      });
+      toast.success('Login successful! Redirecting...', { icon: '🎉', duration: 2000 });
       
       if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_TECHNICIAN')) {
         return { success: true, redirect: '/admin' };
@@ -67,18 +59,8 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password) => {
     try {
-      await axios.post('http://localhost:8080/api/auth/register', {
-        name,
-        email,
-        password,
-        roles: ['user']
-      });
-      
-      toast.success('Account created successfully! Please login.', {
-        icon: '🎉',
-        duration: 2200,
-      });
-      
+      await axiosInstance.post('/auth/register', { name, email, password, roles: ['user'] });
+      toast.success('Account created successfully! Please login.', { icon: '🎉', duration: 2200 });
       return { success: true };
     } catch (error) {
       console.error('Registration failed:', error);
@@ -94,37 +76,20 @@ export const AuthProvider = ({ children }) => {
     toast.success('Logged out successfully');
   };
 
-  const hasRole = (role) => {
-    return user?.roles?.includes(role) || false;
-  };
-
+  const hasRole = (role) => user?.roles?.includes(role) || false;
   const isAdmin = () => hasRole('ROLE_ADMIN');
   const isTechnician = () => hasRole('ROLE_TECHNICIAN');
   const isUser = () => hasRole('ROLE_USER');
   
-  // ADD THIS FUNCTION
   const getUserInitial = () => {
     if (!user?.name) return 'U';
     return user.name.charAt(0).toUpperCase();
   };
 
   const value = {
-    user,
-    loading,
-    token,
-    login,
-    register,
-    logout,
-    hasRole,
-    isAdmin,
-    isTechnician,
-    isUser,
-    getUserInitial  // ADD THIS LINE
+    user, loading, token, login, register, logout,
+    hasRole, isAdmin, isTechnician, isUser, getUserInitial
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
