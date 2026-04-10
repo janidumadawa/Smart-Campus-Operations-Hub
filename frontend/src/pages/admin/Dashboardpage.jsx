@@ -1,4 +1,3 @@
-// frontend/src/pages/admin/Dashboardpage.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -9,55 +8,132 @@ import {
   CheckCircle,
   Users
 } from 'lucide-react';
-
 import axiosInstance from '../../utils/axiosConfig';
+import { useTickets } from '../tickets/hooks/useTickets';
 
 const Dashboardpage = () => {
-  const [totalResources, setTotalResources] = useState('...');
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalResources: 0,
+    activeBookings: 0,
+    pendingBookings: 0,
+    openTickets: 0,
+    resolvedTickets: 0,
+    activeUsers: 0
+  });
+  const [recentBookings, setRecentBookings] = useState([]);
+  const [recentTickets, setRecentTickets] = useState([]);
+
+  const { getAllTickets } = useTickets();
 
   useEffect(() => {
-      axiosInstance.get('/resources', { params: { size: 1 } })
-        .then(response => {
-          const data = response.data;
-          if (data && data.totalElements !== undefined) {
-            setTotalResources(data.totalElements.toString());
-          } else if (data && data.content) {
-            setTotalResources(data.content.length.toString());
-          }
-        })
-        .catch(err => console.error('Error fetching resources:', err));
+    fetchDashboardData();
   }, []);
 
-  const fetchStats = async () => {
+  const fetchDashboardData = async () => {
+    setLoading(true);
     try {
-      const response = await axiosInstance.get('/resources', { params: { size: 1 } });
-      // process response
+      // Fetch resources count
+      const resourcesRes = await axiosInstance.get('/resources', { params: { size: 1 } });
+      const totalResources = resourcesRes.data?.totalElements || 0;
+
+      // Fetch all bookings
+      const bookingsRes = await axiosInstance.get('/bookings');
+      const bookings = bookingsRes.data || [];
+      const activeBookings = bookings.filter(b => b.status === 'APPROVED').length;
+      const pendingBookings = bookings.filter(b => b.status === 'PENDING').length;
+
+      // Fetch all tickets
+      const tickets = await getAllTickets() || [];
+      const openTickets = tickets.filter(t => t.status === 'OPEN').length;
+      const resolvedTickets = tickets.filter(t => t.status === 'RESOLVED').length;
+
+      // Fetch users count (using technicians endpoint as proxy)
+      let activeUsers = 0;
+      try {
+        const usersRes = await axiosInstance.get('/auth/technicians');
+        activeUsers = usersRes.data?.length || 0;
+      } catch {
+        // Fallback: count unique users from tickets
+        const uniqueUsers = new Set(tickets.map(t => t.reportedByUserId).filter(Boolean));
+        activeUsers = uniqueUsers.size;
+      }
+
+      setStats({
+        totalResources,
+        activeBookings,
+        pendingBookings,
+        openTickets,
+        resolvedTickets,
+        activeUsers
+      });
+
+      // Recent bookings (last 5)
+      const sortedBookings = [...bookings]
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 5);
+      setRecentBookings(sortedBookings);
+
+      // Recent tickets (last 5)
+      const sortedTickets = [...tickets]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 5);
+      setRecentTickets(sortedTickets);
+
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const stats = [
-    { title: 'Total Resources', value: totalResources, icon: Package, color: '#F47C20', change: '+12%' },
-    { title: 'Active Bookings', value: '45', icon: Calendar, color: '#0A2342', change: '+8%' },
-    { title: 'Pending Bookings', value: '12', icon: Clock, color: '#F47C20', change: '-3%' },
-    { title: 'Open Tickets', value: '8', icon: AlertCircle, color: '#0A2342', change: '+2%' },
-    { title: 'Resolved Tickets', value: '156', icon: CheckCircle, color: '#F47C20', change: '+24%' },
-    { title: 'Active Users', value: '342', icon: Users, color: '#0A2342', change: '+15%' },
+  const statCards = [
+    { title: 'Total Resources', value: stats.totalResources, icon: Package, color: '#F47C20' },
+    { title: 'Active Bookings', value: stats.activeBookings, icon: Calendar, color: '#0A2342' },
+    { title: 'Pending Bookings', value: stats.pendingBookings, icon: Clock, color: '#F47C20' },
+    { title: 'Open Tickets', value: stats.openTickets, icon: AlertCircle, color: '#0A2342' },
+    { title: 'Resolved Tickets', value: stats.resolvedTickets, icon: CheckCircle, color: '#F47C20' },
+    { title: 'Active Managememnt Users', value: stats.activeUsers, icon: Users, color: '#0A2342' },
   ];
 
-  const recentBookings = [
-    { id: 1, resource: 'Lecture Hall A', user: 'John Doe', date: '2024-04-01', time: '10:00-12:00', status: 'Pending' },
-    { id: 2, resource: 'Computer Lab B', user: 'Jane Smith', date: '2024-04-01', time: '14:00-16:00', status: 'Approved' },
-    { id: 3, resource: 'Meeting Room 1', user: 'Mike Johnson', date: '2024-04-02', time: '09:00-11:00', status: 'Pending' },
-    { id: 4, resource: 'Projector', user: 'Sarah Wilson', date: '2024-04-02', time: '13:00-15:00', status: 'Approved' },
-  ];
+  const getBookingStatusBadge = (status) => {
+    const styles = {
+      'PENDING': 'bg-yellow-100 text-yellow-800',
+      'APPROVED': 'bg-green-100 text-green-800',
+      'REJECTED': 'bg-red-100 text-red-800',
+      'CANCELLED': 'bg-gray-100 text-gray-800'
+    };
+    return styles[status] || 'bg-gray-100 text-gray-800';
+  };
 
-  const recentTickets = [
-    { id: 1, title: 'Projector not working', resource: 'Lecture Hall A', priority: 'High', status: 'Open' },
-    { id: 2, title: 'AC not cooling', resource: 'Computer Lab B', priority: 'Medium', status: 'In Progress' },
-    { id: 3, title: 'Broken chair', resource: 'Meeting Room 1', priority: 'Low', status: 'Open' },
-  ];
+  const getTicketPriorityBadge = (priority) => {
+    const styles = {
+      'CRITICAL': 'bg-purple-100 text-purple-800',
+      'HIGH': 'bg-red-100 text-red-800',
+      'MEDIUM': 'bg-yellow-100 text-yellow-800',
+      'LOW': 'bg-green-100 text-green-800'
+    };
+    return styles[priority] || 'bg-gray-100 text-gray-700';
+  };
+
+  const getTicketStatusBadge = (status) => {
+    const styles = {
+      'OPEN': 'bg-blue-100 text-blue-800',
+      'IN_PROGRESS': 'bg-yellow-100 text-yellow-800',
+      'RESOLVED': 'bg-green-100 text-green-800',
+      'CLOSED': 'bg-gray-100 text-gray-800'
+    };
+    return styles[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <div className="w-8 h-8 border-4 border-[#F47C20] border-t-transparent rounded-full animate-spin"></div>
+        <span className="ml-3 text-gray-600">Loading dashboard...</span>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -68,13 +144,12 @@ const Dashboardpage = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {stats.map((stat, index) => (
+        {statCards.map((stat, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 rounded-lg" style={{ backgroundColor: `${stat.color}10` }}>
                 <stat.icon className="w-6 h-6" style={{ color: stat.color }} />
               </div>
-              <span className="text-sm font-semibold text-green-600">{stat.change}</span>
             </div>
             <h3 className="text-2xl font-bold text-[#0A2342]">{stat.value}</h3>
             <p className="text-gray-600 text-sm mt-1">{stat.title}</p>
@@ -90,31 +165,34 @@ const Dashboardpage = () => {
             <Link to="/admin/bookings" className="text-sm text-[#F47C20] hover:text-[#E06A10]">View All</Link>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Resource</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {recentBookings.map((booking) => (
-                  <tr key={booking.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-3 text-sm text-gray-900">{booking.resource}</td>
-                    <td className="px-6 py-3 text-sm text-gray-600">{booking.user}</td>
-                    <td className="px-6 py-3 text-sm text-gray-600">{booking.date}</td>
-                    <td className="px-6 py-3">
-                      <span className={`px-2 py-1 text-xs rounded-full ${booking.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-                        }`}>
-                        {booking.status}
-                      </span>
-                    </td>
+            {recentBookings.length === 0 ? (
+              <p className="text-center py-8 text-gray-500">No recent bookings</p>
+            ) : (
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Resource</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {recentBookings.map((booking) => (
+                    <tr key={booking.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-3 text-sm text-gray-900">{booking.resourceName}</td>
+                      <td className="px-6 py-3 text-sm text-gray-600">{booking.requestedBy}</td>
+                      <td className="px-6 py-3 text-sm text-gray-600">{booking.date}</td>
+                      <td className="px-6 py-3">
+                        <span className={`px-2 py-1 text-xs rounded-full ${getBookingStatusBadge(booking.status)}`}>
+                          {booking.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
@@ -125,26 +203,31 @@ const Dashboardpage = () => {
             <Link to="/admin/tickets" className="text-sm text-[#F47C20] hover:text-[#E06A10]">View All</Link>
           </div>
           <div className="divide-y divide-gray-100">
-            {recentTickets.map((ticket) => (
-              <div key={ticket.id} className="px-6 py-4 hover:bg-gray-50">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium text-gray-900">{ticket.title}</h3>
-                  <span className={`px-2 py-1 text-xs rounded-full ${ticket.priority === 'High' ? 'bg-red-100 text-red-800' :
-                    ticket.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                    {ticket.priority}
-                  </span>
+            {recentTickets.length === 0 ? (
+              <p className="text-center py-8 text-gray-500">No recent tickets</p>
+            ) : (
+              recentTickets.map((ticket) => (
+                <div key={ticket.id} className="px-6 py-4 hover:bg-gray-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium text-gray-900 truncate pr-2">{ticket.title}</h3>
+                    <span className={`px-2 py-1 text-xs rounded-full ${getTicketPriorityBadge(ticket.priority)}`}>
+                      {ticket.priority || '—'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Resource: {ticket.location || ticket.resourceId || '—'}
+                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className={`px-2 py-1 text-xs rounded-full ${getTicketStatusBadge(ticket.status)}`}>
+                      {ticket.status?.replace('_', ' ') || '—'}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {ticket.createdAt?.slice(0, 10) || ''}
+                    </span>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-600">Resource: {ticket.resource}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className={`px-2 py-1 text-xs rounded-full ${ticket.status === 'Open' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
-                    }`}>
-                    {ticket.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
