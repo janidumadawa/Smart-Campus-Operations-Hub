@@ -1,30 +1,41 @@
 // frontend/src/pages/admin/Dashboardpage.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Package, 
-  Calendar, 
-  Clock, 
-  AlertCircle, 
+import {
+  Package,
+  Calendar,
+  Clock,
+  AlertCircle,
   CheckCircle,
   Users
 } from 'lucide-react';
+
+import axiosInstance from '../../utils/axiosConfig';
 
 const Dashboardpage = () => {
   const [totalResources, setTotalResources] = useState('...');
 
   useEffect(() => {
-    fetch('http://localhost:8080/resources?size=1')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.totalElements !== undefined) {
-          setTotalResources(data.totalElements.toString());
-        } else if (data && data.content) {
-          setTotalResources(data.content.length.toString());
-        }
-      })
-      .catch(err => console.error('Error fetching resources:', err));
+      axiosInstance.get('/resources', { params: { size: 1 } })
+        .then(response => {
+          const data = response.data;
+          if (data && data.totalElements !== undefined) {
+            setTotalResources(data.totalElements.toString());
+          } else if (data && data.content) {
+            setTotalResources(data.content.length.toString());
+          }
+        })
+        .catch(err => console.error('Error fetching resources:', err));
   }, []);
+
+  const fetchStats = async () => {
+    try {
+      const response = await axiosInstance.get('/resources', { params: { size: 1 } });
+      // process response
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
 
   const stats = [
     { title: 'Total Resources', value: totalResources, icon: Package, color: '#F47C20', change: '+12%' },
@@ -95,9 +106,8 @@ const Dashboardpage = () => {
                     <td className="px-6 py-3 text-sm text-gray-600">{booking.user}</td>
                     <td className="px-6 py-3 text-sm text-gray-600">{booking.date}</td>
                     <td className="px-6 py-3">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        booking.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-                      }`}>
+                      <span className={`px-2 py-1 text-xs rounded-full ${booking.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                        }`}>
                         {booking.status}
                       </span>
                     </td>
@@ -119,19 +129,17 @@ const Dashboardpage = () => {
               <div key={ticket.id} className="px-6 py-4 hover:bg-gray-50">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-medium text-gray-900">{ticket.title}</h3>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    ticket.priority === 'High' ? 'bg-red-100 text-red-800' :
+                  <span className={`px-2 py-1 text-xs rounded-full ${ticket.priority === 'High' ? 'bg-red-100 text-red-800' :
                     ticket.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
+                      'bg-green-100 text-green-800'
+                    }`}>
                     {ticket.priority}
                   </span>
                 </div>
                 <p className="text-sm text-gray-600">Resource: {ticket.resource}</p>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    ticket.status === 'Open' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
-                  }`}>
+                  <span className={`px-2 py-1 text-xs rounded-full ${ticket.status === 'Open' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                    }`}>
                     {ticket.status}
                   </span>
                 </div>
