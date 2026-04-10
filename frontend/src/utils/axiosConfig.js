@@ -1,3 +1,4 @@
+// frontend/src/utils/axiosConfig.js
 import axios from 'axios';
 
 const instance = axios.create({
@@ -32,3 +33,5 @@ instance.interceptors.response.use(
 );
 
 export default instance;
+
+export const API_ORIGIN = 'http://localhost:8080';
