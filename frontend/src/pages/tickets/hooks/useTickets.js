@@ -5,15 +5,15 @@ export function useTickets() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const request = useCallback(async (method, url, data = null) => {
+  const request = useCallback(async (method, url, config = {}) => {
     setLoading(true);
     setError(null);
     try {
-      const config = { method, url };
-      if (data) {
-        config.data = data;
-      }
-      const response = await axiosInstance(config);
+      const response = await axiosInstance({
+        method,
+        url,
+        ...config
+      });
       return response.data;
     } catch (e) {
       const errorMsg = e.response?.data?.error || e.message || 'Request failed';
@@ -25,6 +25,7 @@ export function useTickets() {
   }, []);
 
   const getAllTickets = useCallback((params = {}) => {
+    console.log('getAllTickets called with params:', params); // ADD THIS LOG
     return request('get', '/tickets', { params });
   }, [request]);
 
@@ -36,18 +37,18 @@ export function useTickets() {
   
   const getSla = useCallback((id) => request('get', `/tickets/${id}/sla`), [request]);
   
-  const createTicket = useCallback((body) => request('post', '/tickets', body), [request]);
+  const createTicket = useCallback((body) => request('post', '/tickets', { data: body }), [request]);
   
-  const updateStatus = useCallback((id, body) => request('patch', `/tickets/${id}/status`, body), [request]);
+  const updateStatus = useCallback((id, body) => request('patch', `/tickets/${id}/status`, { data: body }), [request]);
   
-  const assignTechnician = useCallback((id, body) => request('patch', `/tickets/${id}/assign`, body), [request]);
+  const assignTechnician = useCallback((id, body) => request('patch', `/tickets/${id}/assign`, { data: body }), [request]);
   
   const deleteTicket = useCallback((id) => request('delete', `/tickets/${id}`), [request]);
   
-  const addComment = useCallback((id, body) => request('post', `/tickets/${id}/comments`, body), [request]);
+  const addComment = useCallback((id, body) => request('post', `/tickets/${id}/comments`, { data: body }), [request]);
   
   const editComment = useCallback((tid, cid, requesterId, content) =>
-    request('put', `/tickets/${tid}/comments/${cid}?requesterId=${requesterId}`, { content }), [request]);
+    request('put', `/tickets/${tid}/comments/${cid}?requesterId=${requesterId}`, { data: { content } }), [request]);
   
   const deleteComment = useCallback((tid, cid, requesterId, isAdmin = false) =>
     request('delete', `/tickets/${tid}/comments/${cid}?requesterId=${requesterId}&isAdmin=${isAdmin}`), [request]);

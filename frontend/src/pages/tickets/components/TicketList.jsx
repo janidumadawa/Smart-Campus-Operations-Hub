@@ -1,54 +1,51 @@
+// src/pages/tickets/components/TicketList.jsx
 import { useEffect, useState, useImperativeHandle, forwardRef } from "react";
 import { useTickets } from "../hooks/useTickets";
 import TicketCard from "./TicketCard";
-import CommentSection from "./CommentSection";
-import SlaTimer from "./SlaTimer";
 import TicketDetail from "./TicketDetail";
 
-const STATUSES   = ["ALL", "OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED", "REJECTED"];
+const STATUSES = ["ALL", "OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED", "REJECTED"];
 const PRIORITIES = ["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"];
 
-const TicketList = forwardRef(function TicketList({ onSelect }, ref) {
+const TicketList = forwardRef(({ userId }, ref) => {
   const { getAllTickets, loading, error } = useTickets();
-  const [tickets,    setTickets]    = useState([]);
-  const [status,     setStatus]     = useState("ALL");
-  const [priority,   setPriority]   = useState("ALL");
-  const [search,     setSearch]     = useState("");
+  const [tickets, setTickets] = useState([]);
+  const [status, setStatus] = useState("ALL");
+  const [priority, setPriority] = useState("ALL");
+  const [search, setSearch] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
-  const [selected,   setSelected]   = useState(null); // ← tracks expanded ticket
+  const [selected, setSelected] = useState(null);
 
   useImperativeHandle(ref, () => ({
     refreshTickets: () => setRefreshKey((prev) => prev + 1),
   }));
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const params = {};
-        if (status   !== "ALL") params.status   = status;
-        if (priority !== "ALL") params.priority = priority;
+useEffect(() => {
+  const fetchTickets = async () => {
+    // DON'T FETCH if userId is not ready
+    if (!userId) {
+      console.log('Waiting for userId...');
+      return;
+    }
+    
+    try {
+      const params = {};
+      params.userId = userId;
+      if (status !== "ALL") params.status = status;
+      if (priority !== "ALL") params.priority = priority;
 
-        const data = await getAllTickets(params);
-        setTickets(data ?? []);
-      } catch (err) {
-        console.error("Failed to load tickets:", err);
-        setTickets([]);
-      }
-    })();
-  }, [status, priority, refreshKey]);
+      console.log('Fetching tickets with params:', params);
 
-  // When a comment is added/edited/deleted, patch just that ticket in state
-  const handleTicketUpdate = (updatedTicket) => {
-    setTickets((prev) =>
-      prev.map((t) => (t.id === updatedTicket.id ? updatedTicket : t))
-    );
-    setSelected(updatedTicket); // keep modal in sync
+      const data = await getAllTickets(params);
+      setTickets(data ?? []);
+    } catch (err) {
+      console.error("Failed to load tickets:", err);
+      setTickets([]);
+    }
   };
 
-  const handleSelect = (ticket) => {
-    setSelected(ticket);
-    onSelect?.(ticket); // still forward to parent if needed
-  };
+  fetchTickets();
+}, [status, priority, refreshKey, userId, getAllTickets]);
 
   const filtered = tickets.filter(
     (t) =>
@@ -109,20 +106,20 @@ const TicketList = forwardRef(function TicketList({ onSelect }, ref) {
         {/* Cards */}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((t) => (
-            <TicketCard key={t.id} ticket={t} onClick={handleSelect} />
+            <TicketCard key={t.id} ticket={t} onClick={setSelected} />
           ))}
         </div>
       </div>
 
-      {/* ── Comment Modal ── */}
+      {/* Ticket Detail Modal */}
       {selected && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-          onClick={() => setSelected(null)} // close on backdrop click
+          onClick={() => setSelected(null)}
         >
           <div
             className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
-            onClick={(e) => e.stopPropagation()} // prevent backdrop close when clicking inside
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Modal header */}
             <div className="flex items-start justify-between px-6 py-4 border-b border-gray-100">
@@ -132,7 +129,7 @@ const TicketList = forwardRef(function TicketList({ onSelect }, ref) {
                 </h2>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <span className="text-xs bg-orange-100 text-[#F47C20] px-2 py-0.5 rounded-full font-medium">
-                    {selected.status}
+                    {selected.status?.replace("_", " ")}
                   </span>
                   {selected.priority && (
                     <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
@@ -153,10 +150,10 @@ const TicketList = forwardRef(function TicketList({ onSelect }, ref) {
               </button>
             </div>
 
-            {/* Main content — scrollable */}
+            {/* Main content */}
             <div className="flex-1 overflow-y-auto px-6 py-4">
-              <TicketDetail 
-                ticketId={selected.id} 
+              <TicketDetail
+                ticketId={selected.id}
                 onBack={() => setSelected(null)}
                 hideBack={true}
               />
