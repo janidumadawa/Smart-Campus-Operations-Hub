@@ -1,3 +1,4 @@
+// backend\src\main\java\backend\model\Booking.java
 package backend.model;
 
 import backend.enums.BookingStatus;
@@ -25,8 +26,29 @@ public class Booking {
     public Booking() {
     }
 
+    public Booking(String id, String resourceId, String resourceName, String date, String startTime,
+                   String endTime, String purpose, Integer attendees, String requestedBy,
+                   String email, BookingStatus status, String adminReason) {
+        this.id = id;
+        this.resourceId = resourceId;
+        this.resourceName = resourceName;
+        this.date = date;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.purpose = purpose;
+        this.attendees = attendees;
+        this.requestedBy = requestedBy;
+        this.email = email;
+        this.status = status;
+        this.adminReason = adminReason;
+    }
+
     public String getId() {
         return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getResourceId() {

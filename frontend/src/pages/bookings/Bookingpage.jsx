@@ -5,6 +5,9 @@ import Footer from "../../components/shared/Footer";
 import { getBookings, saveBookings, resources } from "../../utils/bookingData";
 import { useAuth } from "../../context/AuthContext";
 
+import axiosInstance from "../../utils/axiosConfig";
+
+
 const Bookingpage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -40,54 +43,8 @@ const Bookingpage = () => {
     });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  
 
-    if (!user) {
-      alert("Please login before submitting a booking.");
-      navigate("/login");
-      return;
-    }
-
-    if (
-      !formData.resource ||
-      !formData.date ||
-      !formData.startTime ||
-      !formData.endTime ||
-      !formData.purpose ||
-      !formData.attendees
-    ) {
-      alert("Please fill all fields.");
-      return;
-    }
-
-    if (formData.startTime >= formData.endTime) {
-      alert("End time must be later than start time.");
-      return;
-    }
-
-    const allBookings = getBookings();
-
-    if (hasTimeConflict(allBookings)) {
-      alert("Booking conflict detected for this resource and time.");
-      return;
-    }
-
-    const newBooking = {
-      id: Date.now(),
-      ...formData,
-      attendees: Number(formData.attendees),
-      status: "PENDING",
-      requestedBy: user.fullName || user.name || "Campus User",
-      email: user.email || "user@example.com",
-      adminReason: "",
-    };
-
-    const updatedBookings = [newBooking, ...allBookings];
-    saveBookings(updatedBookings);
-
-    navigate("/bookings/confirmation");
-  };
 
   return (
     <div className="min-h-screen bg-slate-50">

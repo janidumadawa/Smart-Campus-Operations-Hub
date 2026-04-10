@@ -1,29 +1,50 @@
 package backend.controller;
 
+import backend.dto.BookingRequestDTO;
+import backend.model.Booking;
+import backend.service.BookingService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/bookings")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(originPatterns = "*", maxAge = 3600)
 public class BookingController {
 
-    // ✅ GET (test)
-    @GetMapping
-    public String test() {
-        return "Booking API working";
+    private final BookingService bookingService;
+
+    public BookingController(BookingService bookingService) {
+        this.bookingService = bookingService;
     }
 
-    // ✅ POST (this fixes your error)
+    // CREATE BOOKING
     @PostMapping
-    public Map<String, Object> createBooking(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<Booking> createBooking(@Valid @RequestBody BookingRequestDTO request) {
+        Booking booking = bookingService.createBooking(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(booking);
+    }
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Booking created successfully");
-        response.put("data", request);
+    // GET ALL BOOKINGS (Admin)
+    @GetMapping
+    public ResponseEntity<List<Booking>> getAllBookings() {
+        return ResponseEntity.ok(bookingService.getAllBookings());
+    }
 
-        return response;
+    // GET USER'S BOOKINGS
+    @GetMapping("/my")
+    public ResponseEntity<List<Booking>> getMyBookings(@RequestParam String email) {
+        return ResponseEntity.ok(bookingService.getBookingsByEmail(email));
+    }
+
+    // GET BOOKING BY ID
+    @GetMapping("/{id}")
+    public ResponseEntity<Booking> getBookingById(@PathVariable String id) {
+        return bookingService.getBookingById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

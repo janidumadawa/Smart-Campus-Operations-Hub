@@ -1,3 +1,4 @@
+// backend\src\main\java\backend\service\BookingService.java
 package backend.service;
 
 import backend.dto.BookingRequestDTO;
@@ -71,4 +72,8 @@ public class BookingService {
     public List<Booking> getBookingsByEmail(String email) {
         return bookingRepository.findByEmail(email);
     }
+
+    public Optional<Booking> getBookingById(String id) {
+    return bookingRepository.findById(id);
+}
 }
