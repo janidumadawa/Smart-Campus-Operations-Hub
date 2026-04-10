@@ -1,9 +1,12 @@
+// frontend/src/pages/tickets/hooks/useTickets.js
 import { useState, useCallback } from "react";
 import axiosInstance from '../../../utils/axiosConfig';
+
 
 export function useTickets() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
 
   const request = useCallback(async (method, url, config = {}) => {
     setLoading(true);
@@ -57,6 +60,9 @@ export function useTickets() {
   
   const getResourceById = useCallback((id) => request('get', `/resources/${id}`), [request]);
 
+  const getTechnicians = useCallback(() => request('get', '/auth/technicians'), [request]);
+
+
   const uploadAttachments = async (id, files) => {
     setLoading(true);
     setError(null);
@@ -81,6 +87,6 @@ export function useTickets() {
     getAllTickets, getAdminTickets, getTicketById, getSla,
     createTicket, updateStatus, assignTechnician, deleteTicket,
     addComment, editComment, deleteComment, uploadAttachments,
-    getAvailableResources, getResourceById,
+    getAvailableResources, getResourceById,getTechnicians
   };
 }

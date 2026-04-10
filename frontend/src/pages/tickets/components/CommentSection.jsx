@@ -1,3 +1,4 @@
+// frontend/src/pages/tickets/components/CommentSection.jsx
 import { useState } from "react";
 import { useTickets } from "../hooks/useTickets";
 
