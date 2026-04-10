@@ -20,22 +20,21 @@ const TicketList = forwardRef(({ userId, technicianId }, ref) => {
     refreshTickets: () => setRefreshKey((prev) => prev + 1),
   }));
 
-useEffect(() => {
-  const fetchTickets = async () => {
-    // DON'T FETCH if userId is not ready
-    if (!userId && !technicianId) {
-      console.log('Waiting for userId or technicianId...');
-      return;
-    }
-    
-    try {
+  useEffect(() => {
+    const fetchTickets = async () => {
+      if (!userId && !technicianId) {
+        console.log("Waiting for userId or technicianId...");
+        return;
+      }
+
+      try {
         const params = {};
         if (userId) params.userId = userId;
         if (technicianId) params.technicianId = technicianId;
         if (status !== "ALL") params.status = status;
         if (priority !== "ALL") params.priority = priority;
 
-        console.log('Fetching tickets with params:', params);
+        console.log("Fetching tickets with params:", params);
         const data = await getAllTickets(params);
         setTickets(data ?? []);
       } catch (err) {
@@ -44,14 +43,20 @@ useEffect(() => {
       }
     };
 
-  fetchTickets();
-}, [status, priority, refreshKey, userId, technicianId, getAllTickets]);
+    fetchTickets();
+  }, [status, priority, refreshKey, userId, technicianId]); // removed getAllTickets to prevent infinite loop
 
-  const filtered = tickets.filter(
-    (t) =>
+  // Fixed: now also filters by status and priority client-side
+  const filtered = tickets.filter((t) => {
+    const matchesSearch =
       t.title?.toLowerCase().includes(search.toLowerCase()) ||
-      t.location?.toLowerCase().includes(search.toLowerCase())
-  );
+      t.location?.toLowerCase().includes(search.toLowerCase());
+
+    const matchesStatus = status === "ALL" || t.status === status;
+    const matchesPriority = priority === "ALL" || t.priority === priority;
+
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
 
   return (
     <>
@@ -69,14 +74,18 @@ useEffect(() => {
             onChange={(e) => setStatus(e.target.value)}
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F47C20]"
           >
-            {STATUSES.map((s) => <option key={s}>{s}</option>)}
+            {STATUSES.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
           </select>
           <select
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F47C20]"
           >
-            {PRIORITIES.map((p) => <option key={p}>{p}</option>)}
+            {PRIORITIES.map((p) => (
+              <option key={p}>{p}</option>
+            ))}
           </select>
           <span className="text-sm text-gray-400 ml-auto">{filtered.length} tickets</span>
         </div>

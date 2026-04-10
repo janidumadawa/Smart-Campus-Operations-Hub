@@ -93,7 +93,7 @@ const Login = () => {
                                             onChange={handleChange}
                                             required
                                             className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-orange-100 transition-all text-sm"
-                                            placeholder="admin@sliit.lk or user@example.com"
+                                            placeholder="Enter your email address"
                                         />
                                     </div>
                                 </div>

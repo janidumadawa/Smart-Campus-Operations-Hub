@@ -1,24 +1,26 @@
 // src/pages/tickets/components/TicketForm.jsx
 import { useState, useEffect } from "react";
 import { useTickets } from "../hooks/useTickets";
-import { useAuth } from '../../../context/AuthContext';  
+import { useAuth } from '../../../context/AuthContext';
 
+const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
 
-// TODO: Replace with real authentication system
-// For now using mock user - integrate with your auth provider
-// const MOCK_USER = { id: "user-001", name: "John Doe", role: "USER" };
-
-const PRIORITIES  = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
+const validateContact = (value) => {
+  const slPhone = /^(?:\+94|0)7\d{8}$/;
+  const gmail   = /^[^\s@]+@gmail\.com$/i;
+  const sliit   = /^[^\s@]+@my\.sliit\.lk$/i;
+  return slPhone.test(value) || gmail.test(value) || sliit.test(value);
+};
 
 export default function TicketForm({ onSuccess, onCancel }) {
   const { createTicket, uploadAttachments, getAvailableResources, loading, error } = useTickets();
-  const { user } = useAuth(); 
+  const { user } = useAuth();
 
   const [form, setForm] = useState({
-    title: "", 
+    title: "",
     description: "",
-    priority: "", 
-    contactDetails: "", 
+    priority: "",
+    contactDetails: "",
     resourceId: "",
     resourceType: "",
     resourceCapacity: "",
@@ -26,15 +28,15 @@ export default function TicketForm({ onSuccess, onCancel }) {
     location: "",
   });
 
-  const [files, setFiles]   = useState([]);
+  const [files, setFiles] = useState([]);
   const [preview, setPreview] = useState([]);
   const [resources, setResources] = useState([]);
   const [resourcesLoading, setResourcesLoading] = useState(false);
   const [selectedResource, setSelectedResource] = useState(null);
+  const [contactError, setContactError] = useState("");
 
   const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
 
-  // Fetch available resources on component mount
   useEffect(() => {
     const fetchResources = async () => {
       setResourcesLoading(true);
@@ -53,23 +55,22 @@ export default function TicketForm({ onSuccess, onCancel }) {
     fetchResources();
   }, [getAvailableResources]);
 
-
-  // Handle resource selection and auto-fill fields
   const handleResourceChange = (e) => {
     const resourceId = e.target.value;
     setForm((p) => ({ ...p, resourceId }));
-    
+
     if (resourceId) {
       const selected = resources.find((r) => r.id === resourceId);
       setSelectedResource(selected);
-      
+
       if (selected) {
-        setForm((p) => ({ 
-          ...p, 
+        setForm((p) => ({
+          ...p,
+          resourceId,
           resourceType: selected.type || "",
           resourceCapacity: selected.capacity ? String(selected.capacity) : "",
           resourceLocation: selected.location || "",
-          location: selected.location || ""
+          location: selected.location || "",
         }));
       }
     } else {
@@ -78,14 +79,28 @@ export default function TicketForm({ onSuccess, onCancel }) {
     }
   };
 
- const handleFiles = (e) => {
+  const handleFiles = (e) => {
     const selected = Array.from(e.target.files).slice(0, 3);
     setFiles(selected);
     setPreview(selected.map((f) => URL.createObjectURL(f)));
   };
 
+  const handleContactBlur = () => {
+    if (form.contactDetails && !validateContact(form.contactDetails)) {
+      setContactError("Enter a valid Sri Lankan phone, Gmail, or SLIIT email.");
+    } else {
+      setContactError("");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validateContact(form.contactDetails)) {
+      setContactError("Enter a valid Sri Lankan phone, Gmail, or SLIIT email.");
+      return;
+    }
+
     try {
       const ticket = await createTicket({
         title: form.title,
@@ -95,13 +110,14 @@ export default function TicketForm({ onSuccess, onCancel }) {
         resourceId: form.resourceId,
         location: form.location || form.resourceLocation,
         category: "",
-        reportedByUserId: user?.id,       
-        reportedByName: user?.name,      
+        reportedByUserId: user?.id,
+        reportedByName: user?.name,
       });
+
       if (files.length > 0) {
         await uploadAttachments(ticket.id, files);
       }
-      // Reset form and files after successful submission
+
       setForm({
         title: "", description: "",
         priority: "", contactDetails: "", resourceId: "",
@@ -111,6 +127,7 @@ export default function TicketForm({ onSuccess, onCancel }) {
       setFiles([]);
       setPreview([]);
       setSelectedResource(null);
+      setContactError("");
       onSuccess?.();
     } catch (_) {}
   };
@@ -148,8 +165,6 @@ export default function TicketForm({ onSuccess, onCancel }) {
       {form.resourceId && selectedResource && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
           <h4 className="font-semibold text-gray-800 text-sm">Resource Details</h4>
-          
-          {/* Type + Capacity + Location */}
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Type</label>
@@ -218,10 +233,23 @@ export default function TicketForm({ onSuccess, onCancel }) {
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Contact Details *</label>
         <input
-          required value={form.contactDetails} onChange={set("contactDetails")}
-          placeholder="Phone or email"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F47C20]"
+          required
+          value={form.contactDetails}
+          onChange={(e) => {
+            set("contactDetails")(e);
+            if (contactError) setContactError("");
+          }}
+          onBlur={handleContactBlur}
+          placeholder="Enter your contact info"
+          pattern="^(?:(?:\+94|0)7\d{8}|[^\s@]+@gmail\.com|[^\s@]+@my\.sliit\.lk)$"
+          title="Enter a valid Sri Lankan phone number, Gmail address, or SLIIT campus email"
+          className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F47C20] ${
+            contactError ? "border-red-400" : "border-gray-300"
+          }`}
         />
+        {contactError && (
+          <p className="mt-1 text-xs text-red-500">{contactError}</p>
+        )}
       </div>
 
       {/* Attachments */}
