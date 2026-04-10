@@ -167,14 +167,14 @@ const Login = () => {
                                 </button>
 
                                 {/* Demo Credentials */}
-                                <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                {/* <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
                                     <p className="text-xs font-semibold text-gray-700 mb-2">Demo Credentials:</p>
                                     <div className="space-y-1 text-xs text-gray-600">
                                         <p>Admin: admin@sliit.lk / Admin@123</p>
                                         <p>Technician: technician1@sliit.lk / Tech@1</p>
                                         <p>User: Register new account</p>
                                     </div>
-                                </div>
+                                </div> */}
 
                                 <div className="relative my-6">
                                     <div className="absolute inset-0 flex items-center">
