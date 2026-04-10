@@ -5,12 +5,14 @@ import toast from 'react-hot-toast';
 import { useTickets } from '../tickets/hooks/useTickets';
 import CommentSection from '../tickets/components/CommentSection';
 import { API_ORIGIN } from '../../utils/axiosConfig';
+import { useAuth } from '../../context/AuthContext';  
+import TicketList from '../tickets/components/TicketList';  
 
 // TODO: Replace with real authentication system
 const ADMIN_USER = { id: 'admin-001', name: 'Admin User', role: 'ADMIN' };
 
 const TicketManagement = () => {
-  const { getAdminTickets, getAvailableResources, updateStatus, assignTechnician, loading, error } = useTickets();
+  const { getAdminTickets, getAvailableResources, updateStatus, assignTechnician, loading, error, getTechnicians } = useTickets();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -19,9 +21,11 @@ const TicketManagement = () => {
   const [resources, setResources] = useState([]);
   const [draftStatus, setDraftStatus] = useState('');
   const [activeImg, setActiveImg] = useState(null);
-  const { getTechnicians } = useTickets();
   const [technicians, setTechnicians] = useState([]);
   const [selectedTechnicianId, setSelectedTechnicianId] = useState('');
+  const { isAdmin, isTechnician, user } = useAuth(); 
+  const [technicianId, setTechnicianId] = useState(null);  
+
 
 
   useEffect(() => {
@@ -31,6 +35,13 @@ const TicketManagement = () => {
   };
   fetchTechnicians();
 }, []);
+
+  useEffect(() => {
+    if (isTechnician() && user) {
+      setTechnicianId(user.id);
+    }
+  }, [isTechnician, user]);
+
 
 
   const loadTickets = async () => {
@@ -202,6 +213,20 @@ const handleSaveChanges = async () => {
     const normalized = url.startsWith('/') ? url : `/${url}`;
     return `${API_ORIGIN}${normalized}`;
   };
+
+    if (isTechnician()) {
+    return (
+      <div>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-[#0A2342]">My Assigned Tickets</h1>
+          <p className="text-gray-600 mt-1">Tickets assigned to you for resolution</p>
+        </div>
+        
+        <TicketList technicianId={technicianId} />
+      </div>
+    );
+  }
+
 
   return (
     <div>

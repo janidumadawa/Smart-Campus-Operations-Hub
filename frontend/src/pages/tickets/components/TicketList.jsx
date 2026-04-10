@@ -7,7 +7,7 @@ import TicketDetail from "./TicketDetail";
 const STATUSES = ["ALL", "OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED", "REJECTED"];
 const PRIORITIES = ["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"];
 
-const TicketList = forwardRef(({ userId }, ref) => {
+const TicketList = forwardRef(({ userId, technicianId }, ref) => {
   const { getAllTickets, loading, error } = useTickets();
   const [tickets, setTickets] = useState([]);
   const [status, setStatus] = useState("ALL");
@@ -23,29 +23,29 @@ const TicketList = forwardRef(({ userId }, ref) => {
 useEffect(() => {
   const fetchTickets = async () => {
     // DON'T FETCH if userId is not ready
-    if (!userId) {
-      console.log('Waiting for userId...');
+    if (!userId && !technicianId) {
+      console.log('Waiting for userId or technicianId...');
       return;
     }
     
     try {
-      const params = {};
-      params.userId = userId;
-      if (status !== "ALL") params.status = status;
-      if (priority !== "ALL") params.priority = priority;
+        const params = {};
+        if (userId) params.userId = userId;
+        if (technicianId) params.technicianId = technicianId;
+        if (status !== "ALL") params.status = status;
+        if (priority !== "ALL") params.priority = priority;
 
-      console.log('Fetching tickets with params:', params);
-
-      const data = await getAllTickets(params);
-      setTickets(data ?? []);
-    } catch (err) {
-      console.error("Failed to load tickets:", err);
-      setTickets([]);
-    }
-  };
+        console.log('Fetching tickets with params:', params);
+        const data = await getAllTickets(params);
+        setTickets(data ?? []);
+      } catch (err) {
+        console.error("Failed to load tickets:", err);
+        setTickets([]);
+      }
+    };
 
   fetchTickets();
-}, [status, priority, refreshKey, userId, getAllTickets]);
+}, [status, priority, refreshKey, userId, technicianId, getAllTickets]);
 
   const filtered = tickets.filter(
     (t) =>

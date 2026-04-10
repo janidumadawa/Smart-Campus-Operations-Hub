@@ -162,4 +162,6 @@ public class IncidentTicketController {
         ticketService.deleteTicket(id);
         return ResponseEntity.noContent().build();
     }
+
+
 }
