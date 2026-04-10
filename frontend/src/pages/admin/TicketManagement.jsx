@@ -4,10 +4,10 @@ import { Search, Clock, CheckCircle, AlertCircle, MessageSquare, X } from 'lucid
 import toast from 'react-hot-toast';
 import { useTickets } from '../tickets/hooks/useTickets';
 import CommentSection from '../tickets/components/CommentSection';
+import { API_ORIGIN } from '../../utils/axiosConfig';
 
 // TODO: Replace with real authentication system
 const ADMIN_USER = { id: 'admin-001', name: 'Admin User', role: 'ADMIN' };
-const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '');
 
 const TicketManagement = () => {
   const { getAdminTickets, getAvailableResources, updateStatus, assignTechnician, loading, error } = useTickets();
