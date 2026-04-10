@@ -78,7 +78,7 @@ const ResourceModal = ({ isOpen, onClose, onSuccess, editingResource, apiBaseUrl
       formDataToSend.append('resource', new Blob([JSON.stringify(resourceData)], {
         type: 'application/json'
       }));
-      
+
       if (image) {
         formDataToSend.append('image', image);
       }

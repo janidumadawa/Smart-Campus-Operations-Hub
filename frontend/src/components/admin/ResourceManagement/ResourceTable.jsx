@@ -10,7 +10,8 @@ const ResourceTable = ({
   onEdit,
   onDelete,
   onToggleStatus,
-  onView // Add this prop
+  onView,
+  isAdmin  // ADD THIS PROP
 }) => {
   const getStatusBadgeClass = (status) => {
     return status === 'AVAILABLE'
@@ -78,20 +79,26 @@ const ResourceTable = ({
                     >
                       <Eye className="w-4 h-4 text-blue-500" />
                     </button>
-                    <button
-                      onClick={() => onEdit(resource)}
-                      className="p-1 hover:bg-gray-100 rounded transition-colors"
-                      title="Edit"
-                    >
-                      <Edit className="w-4 h-4 text-gray-500" />
-                    </button>
-                    <button
-                      onClick={() => onDelete(resource.id)}
-                      className="p-1 hover:bg-red-50 rounded transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </button>
+                    
+                    {/* Only show Edit and Delete for Admin */}
+                    {isAdmin && (
+                      <>
+                        <button
+                          onClick={() => onEdit(resource)}
+                          className="p-1 hover:bg-gray-100 rounded transition-colors"
+                          title="Edit"
+                        >
+                          <Edit className="w-4 h-4 text-gray-500" />
+                        </button>
+                        <button
+                          onClick={() => onDelete(resource.id)}
+                          className="p-1 hover:bg-red-50 rounded transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </td>
               </tr>
