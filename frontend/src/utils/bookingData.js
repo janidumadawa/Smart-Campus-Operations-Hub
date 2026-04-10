@@ -1,3 +1,4 @@
+// frontend\src\utils\bookingData.js
 export const resources = [
   "Lecture Hall A",
   "Lecture Hall B",

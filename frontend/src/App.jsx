@@ -54,11 +54,14 @@ function App() {
                 <MyBookings />
               </ProtectedRoute>
             } />
-            <Route path="/bookings/details/:id" element={
+
+            {/* ✅ CHANGE THIS ROUTE */}
+            <Route path="/bookings/:id" element={
               <ProtectedRoute>
                 <BookingDetails />
               </ProtectedRoute>
             } />
+
             <Route path="/bookings/confirmation" element={
               <ProtectedRoute>
                 <BookingConfirmation />
