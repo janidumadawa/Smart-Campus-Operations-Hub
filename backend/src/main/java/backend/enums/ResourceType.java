@@ -1,5 +1,7 @@
+// backend/src/main/java/backend/enums/ResourceType.java
 package backend.enums;
 
-public class ResourceType {
-    
+public enum ResourceType {
+    LECTURE_HALL,
+    EQUIPMENT
 }
