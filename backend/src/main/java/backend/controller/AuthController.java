@@ -123,4 +123,24 @@ public class AuthController {
         
         return ResponseEntity.ok(technicians);
     }
+
+@GetMapping("/users")
+public ResponseEntity<?> getAllUsers() {
+    List<UserResponse> users = userRepository.findAll().stream()
+            .map(user -> {
+                UserResponse response = new UserResponse();
+                response.setId(user.getId());
+                response.setEmail(user.getEmail());
+                response.setName(user.getName());
+                response.setProfilePicture(user.getProfilePicture());
+                response.setRoles(user.getRoles().stream().map(Enum::name).collect(Collectors.toSet()));
+                response.setEnabled(user.isEnabled());     
+                response.setProvider(user.getProvider());  
+                response.setCreatedAt(user.getCreatedAt());
+                return response;
+            })
+            .collect(Collectors.toList());
+    
+    return ResponseEntity.ok(users);
+}
 }

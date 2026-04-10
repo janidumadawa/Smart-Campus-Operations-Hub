@@ -10,4 +10,8 @@ public class UserResponse {
     private String name;
     private String profilePicture;
     private Set<String> roles;
+    private boolean enabled; 
+    private String provider; 
+    private Long createdAt;  
+
 }
