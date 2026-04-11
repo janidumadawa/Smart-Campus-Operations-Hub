@@ -1,4 +1,3 @@
-// frontend/src/context/AuthContext.jsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axiosInstance from '../utils/axiosConfig';
 import toast from 'react-hot-toast';
@@ -26,7 +25,7 @@ export const AuthProvider = ({ children }) => {
       setUser(response.data);
     } catch (error) {
       console.error('Failed to fetch user:', error);
-      logout();
+      logout(false);
     } finally {
       setLoading(false);
     }
@@ -36,16 +35,16 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axiosInstance.post('/auth/login', { email, password });
       const { token, id, email: userEmail, name, roles } = response.data;
-      
+
       localStorage.setItem('token', token);
       localStorage.setItem('userId', id);
       setToken(token);
-      
+
       const userData = { id, email: userEmail, name, roles };
       setUser(userData);
-      
+
       toast.success('Login successful! Redirecting...', { icon: '🎉', duration: 2000 });
-      
+
       if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_TECHNICIAN')) {
         return { success: true, redirect: '/admin' };
       } else {
@@ -55,6 +54,32 @@ export const AuthProvider = ({ children }) => {
       console.error('Login failed:', error);
       toast.error(error.response?.data?.message || 'Invalid credentials');
       return { success: false, error: error.response?.data || 'Login failed' };
+    }
+  };
+
+  const googleLogin = async (credential) => {
+    try {
+      const response = await axiosInstance.post('/auth/google', { credential });
+      const { token, id, email: userEmail, name, roles } = response.data;
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('userId', id);
+      setToken(token);
+
+      const userData = { id, email: userEmail, name, roles };
+      setUser(userData);
+
+      toast.success('Google sign-in successful!', { icon: '🎉', duration: 2000 });
+
+      if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_TECHNICIAN')) {
+        return { success: true, redirect: '/admin' };
+      } else {
+        return { success: true, redirect: '/' };
+      }
+    } catch (error) {
+      console.error('Google login failed:', error);
+      toast.error(error.response?.data?.message || 'Google sign-in failed');
+      return { success: false, error: error.response?.data || 'Google sign-in failed' };
     }
   };
 
@@ -70,27 +95,40 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = (showToast = true) => {
     localStorage.removeItem('token');
     localStorage.removeItem('userId');
     setToken(null);
     setUser(null);
-    toast.success('Logged out successfully');
+
+    if (showToast) {
+      toast.success('Logged out successfully');
+    }
   };
 
   const hasRole = (role) => user?.roles?.includes(role) || false;
   const isAdmin = () => hasRole('ROLE_ADMIN');
   const isTechnician = () => hasRole('ROLE_TECHNICIAN');
   const isUser = () => hasRole('ROLE_USER');
-  
+
   const getUserInitial = () => {
     if (!user?.name) return 'U';
     return user.name.charAt(0).toUpperCase();
   };
 
   const value = {
-    user, loading, token, login, register, logout,
-    hasRole, isAdmin, isTechnician, isUser, getUserInitial
+    user,
+    loading,
+    token,
+    login,
+    googleLogin,
+    register,
+    logout,
+    hasRole,
+    isAdmin,
+    isTechnician,
+    isUser,
+    getUserInitial
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
