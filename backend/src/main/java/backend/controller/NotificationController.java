@@ -44,6 +44,8 @@ public class NotificationController {
         response.put("totalElements", notifications.getTotalElements());
         response.put("currentPage", page);
         
+        System.out.println("[DEBUG] Returned " + notifications.getContent().size() + " notifications for user: " + userId);
+        
         return ResponseEntity.ok(response);
     }
 
@@ -75,6 +77,8 @@ public class NotificationController {
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("unreadCount", count);
+        
+        System.out.println("[DEBUG] Unread count for " + userId + ": " + count);
         
         return ResponseEntity.ok(response);
     }

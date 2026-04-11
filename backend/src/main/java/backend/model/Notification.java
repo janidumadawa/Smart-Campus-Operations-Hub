@@ -124,12 +124,12 @@ public class Notification {
         this.createdAt = createdAt;
     }
 
-    @JsonProperty("isRead")
+    @JsonProperty("read")
     public boolean isRead() {
         return read;
     }
 
-    @JsonProperty("isRead")
+    @JsonProperty("read")
     public void setRead(boolean read) {
         this.read = read;
     }

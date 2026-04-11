@@ -11,7 +11,7 @@ const NotificationPage = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   
-  const userId = user?.id || localStorage.getItem('userId');
+  const userId = user?.id || user?.email || localStorage.getItem('userId');
 
   const fetchNotifications = async () => {
     if (!userId || userId === 'null' || userId === 'undefined') {

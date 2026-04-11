@@ -43,13 +43,16 @@ public class NotificationServiceImpl implements NotificationService {
     public Notification createNotification(String recipientId, NotificationType type, NotificationCategory category,
                                           String title, String message, String relatedResourceId, String relatedResourceType) {
         
+        // Resolve ID if email is provided
+        final String resolvedId = resolveRecipientId(recipientId);
+        
         // Check if user has enabled notifications for this category
-        if (!isNotificationEnabledForUser(recipientId, category)) {
-            logger.info("Notification skipped: User " + recipientId + " has disabled " + category + " notifications");
+        if (!isNotificationEnabledForUser(resolvedId, category)) {
+            logger.info("Notification skipped: User " + resolvedId + " has disabled " + category + " notifications");
             return null;
         }
 
-        Notification notification = new Notification(recipientId, type, category, title, message, relatedResourceId, relatedResourceType);
+        Notification notification = new Notification(resolvedId, type, category, title, message, relatedResourceId, relatedResourceType);
         Notification savedNotification = notificationRepository.save(notification);
         
         logger.info("Notification created: " + savedNotification.getId());
@@ -69,7 +72,7 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Override
     public Page<Notification> getUserNotifications(String userId, Pageable pageable) {
-        return notificationRepository.findByRecipientIdOrderByCreatedAtDesc(userId, pageable);
+        return notificationRepository.findByRecipientIdOrderByCreatedAtDesc(resolveRecipientId(userId), pageable);
     }
 
     /**
@@ -77,7 +80,7 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Override
     public long getUnreadCount(String userId) {
-        return notificationRepository.countByRecipientIdAndReadFalse(userId);
+        return notificationRepository.countByRecipientIdAndReadFalse(resolveRecipientId(userId));
     }
 
     /**
@@ -85,7 +88,7 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Override
     public List<Notification> getUnreadNotifications(String userId) {
-        return notificationRepository.findByRecipientIdAndReadFalseOrderByCreatedAtDesc(userId);
+        return notificationRepository.findByRecipientIdAndReadFalseOrderByCreatedAtDesc(resolveRecipientId(userId));
     }
 
     /**
@@ -107,7 +110,7 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Override
     public void markAllAsRead(String userId) {
-        List<Notification> unreadNotifications = getUnreadNotifications(userId);
+        List<Notification> unreadNotifications = getUnreadNotifications(resolveRecipientId(userId));
         unreadNotifications.forEach(n -> n.setRead(true));
         notificationRepository.saveAll(unreadNotifications);
     }
@@ -131,7 +134,7 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Override
     public List<Notification> getNotificationsByCategory(String userId, NotificationCategory category) {
-        return notificationRepository.findByRecipientIdAndCategoryOrderByCreatedAtDesc(userId, category);
+        return notificationRepository.findByRecipientIdAndCategoryOrderByCreatedAtDesc(resolveRecipientId(userId), category);
     }
 
     /**
@@ -156,12 +159,13 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Override
     public NotificationPreference getOrCreatePreferences(String userId) {
-        Optional<NotificationPreference> existing = preferenceRepository.findByUserId(userId);
+        String resolvedId = resolveRecipientId(userId);
+        Optional<NotificationPreference> existing = preferenceRepository.findByUserId(resolvedId);
         if (existing.isPresent()) {
             return existing.get();
         }
         
-        NotificationPreference newPreference = new NotificationPreference(userId);
+        NotificationPreference newPreference = new NotificationPreference(resolvedId);
         return preferenceRepository.save(newPreference);
     }
 
@@ -275,6 +279,19 @@ public class NotificationServiceImpl implements NotificationService {
         return userRepository.findById(userId)
                 .map(backend.model.User::getEmail)
                 .orElse(null);
+    }
+
+    /**
+     * Resolve userId from email if necessary
+     */
+    private String resolveRecipientId(String userId) {
+        if (userId == null) return null;
+        if (userId.contains("@")) {
+            return userRepository.findByEmail(userId)
+                    .map(backend.model.User::getId)
+                    .orElse(userId); // Fallback to email if user not found (unlikely)
+        }
+        return userId;
     }
 
     /**

@@ -64,8 +64,9 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         // Initialize Default Student
-        if (!userRepository.existsByEmail("student@sliit.lk")) {
-            User student = new User();
+        User student = userRepository.findByEmail("student@sliit.lk").orElse(null);
+        if (student == null) {
+            student = new User();
             student.setEmail("student@sliit.lk");
             student.setPassword(passwordEncoder.encode("Student@123"));
             student.setName("Student User");
@@ -73,19 +74,56 @@ public class DataInitializer implements CommandLineRunner {
             Set<Role> studentRoles = new HashSet<>();
             studentRoles.add(Role.ROLE_USER);
             student.setRoles(studentRoles);
-            userRepository.save(student);
+            student = userRepository.save(student);
             System.out.println("Student user created: student@sliit.lk / Student@123");
-            
-            // Seed welcome notification
-            notificationService.createNotification(
-                student.getId(),
-                backend.enums.NotificationType.SYSTEM_ALERT,
-                backend.enums.NotificationCategory.SYSTEM,
-                "Welcome to CampusFlow!",
-                "Welcome to your new campus operations platform. Here you can book resources, manage tickets, and stay updated.",
-                null,
-                "SYSTEM"
-            );
         }
+        
+        // Seed notifications for student and admin
+        User admin = userRepository.findByEmail("admin@sliit.lk").orElse(null);
+        
+        if (student != null) {
+            seedVivaNotifications(student.getId(), student.getEmail());
+        }
+        
+        if (admin != null) {
+            seedVivaNotifications(admin.getId(), admin.getEmail());
+        }
+
+        System.out.println("Data initialization complete!");
+    }
+
+    private void seedVivaNotifications(String userId, String email) {
+        // Welcome notification
+        notificationService.createNotification(
+            userId,
+            backend.enums.NotificationType.SYSTEM_ALERT,
+            backend.enums.NotificationCategory.SYSTEM,
+            "Welcome to CampusFlow!",
+            "Your account is set up and ready. We've optimized the notification system for your viva!",
+            null,
+            "SYSTEM"
+        );
+
+        // Security notification
+        notificationService.createNotification(
+            userId,
+            backend.enums.NotificationType.SYSTEM_ALERT,
+            backend.enums.NotificationCategory.SYSTEM,
+            "System Optimization Active",
+            "Real-time alerts for bookings and tickets are now fully synchronized with your dashboard.",
+            null,
+            "SYSTEM"
+        );
+        
+        // Also seed by email just in case the resolution is bypassed
+        notificationService.createNotification(
+            email,
+            backend.enums.NotificationType.SYSTEM_ALERT,
+            backend.enums.NotificationCategory.SYSTEM,
+            "Platform Ready",
+            "The Smart Campus Operations Hub is fully operational and synchronized.",
+            null,
+            "SYSTEM"
+        );
     }
 }
