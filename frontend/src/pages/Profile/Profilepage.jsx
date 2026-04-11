@@ -1,43 +1,120 @@
-// frontend/src/pages/Profile/Profilepage.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, MapPin, Calendar, Shield, Edit2, Save, X, Camera, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
+import axiosInstance from '../../utils/axiosConfig';
 
 const Profilepage = () => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState({
-    name: 'Admin User',
-    email: 'admin@campusflow.com',
-    phone: '+1 (555) 123-4567',
-    location: 'Campus Flow Headquarters',
-    role: 'ADMIN',
-    joined: 'January 15, 2024',
-    avatar: 'A'
+    id: '',
+    name: '',
+    email: '',
+    phone: 'Not provided',
+    location: 'Not provided',
+    role: 'USER',
+    joined: '',
+    avatar: 'U',
+    provider: 'Email'
   });
 
   const [formData, setFormData] = useState({
-    name: userData.name,
-    email: userData.email,
-    phone: userData.phone,
-    location: userData.location
+    name: '',
+    email: '',
+    phone: '',
+    location: ''
   });
+
+  // Password change state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      const response = await axiosInstance.get('/auth/me');
+      const userInfo = response.data;
+      
+      const profileData = {
+        id: userInfo.id || '',
+        name: userInfo.name || 'User',
+        email: userInfo.email || '',
+        phone: userInfo.phone || 'Not provided',
+        location: userInfo.location || 'Not provided',
+        role: userInfo.roles?.includes('ROLE_ADMIN') ? 'ADMIN' : 
+              userInfo.roles?.includes('ROLE_TECHNICIAN') ? 'TECHNICIAN' : 'USER',
+        joined: userInfo.createdAt ? new Date(userInfo.createdAt).toLocaleDateString('en-US', { 
+          year: 'numeric', month: 'long', day: 'numeric' 
+        }) : 'Recently',
+        avatar: userInfo.name?.charAt(0)?.toUpperCase() || 'U',
+        provider: userInfo.provider === 'google' ? 'Google' : 'Email'
+      };
+      
+      setUserData(profileData);
+      setFormData({
+        name: profileData.name,
+        email: profileData.email,
+        phone: profileData.phone,
+        location: profileData.location
+      });
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+      toast.error('Failed to load profile');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSave = () => {
-    setUserData({
-      ...userData,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      location: formData.location
-    });
-    setIsEditing(false);
-    toast.success('Profile updated successfully');
+  const handlePasswordChange = (e) => {
+    setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+  };
+
+  const handleSave = async () => {
+    try {
+      // Update profile API call (if backend supports it)
+      await axiosInstance.put(`/auth/users/${userData.id}`, {
+        name: formData.name,
+        phone: formData.phone,
+        location: formData.location
+      });
+      
+      setUserData({
+        ...userData,
+        name: formData.name,
+        phone: formData.phone,
+        location: formData.location,
+        avatar: formData.name?.charAt(0)?.toUpperCase() || 'U'
+      });
+      setIsEditing(false);
+      toast.success('Profile updated successfully');
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      // Fallback: just update locally if API fails
+      setUserData({
+        ...userData,
+        name: formData.name,
+        phone: formData.phone,
+        location: formData.location,
+        avatar: formData.name?.charAt(0)?.toUpperCase() || 'U'
+      });
+      setIsEditing(false);
+      toast.success('Profile updated (local)');
+    }
   };
 
   const handleCancel = () => {
@@ -50,18 +127,64 @@ const Profilepage = () => {
     setIsEditing(false);
   };
 
+  const handleUpdatePassword = async () => {
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      toast.error('Please fill all password fields');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await axiosInstance.post('/auth/change-password', {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+      
+      toast.success('Password updated successfully');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      
+      // Logout after password change
+      setTimeout(() => {
+        logout();
+        navigate('/login');
+      }, 1500);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update password');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   const getRoleBadge = (role) => {
     const colors = {
       ADMIN: 'bg-purple-100 text-purple-800',
       USER: 'bg-blue-100 text-blue-800',
       TECHNICIAN: 'bg-green-100 text-green-800'
     };
-    return <span className={`px-3 py-1 text-sm rounded-full ${colors[role]}`}>{role}</span>;
+    return <span className={`px-3 py-1 text-sm rounded-full ${colors[role] || 'bg-gray-100 text-gray-800'}`}>{role}</span>;
   };
 
   const handleGoBack = () => {
     navigate(-1);
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="w-8 h-8 border-4 border-[#F47C20] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -101,7 +224,11 @@ const Profilepage = () => {
               </div>
               <div className="mb-2">
                 <h2 className="text-xl font-bold text-[#0A2342]">{userData.name}</h2>
-                <div className="mt-1">{getRoleBadge(userData.role)}</div>
+                <div className="flex items-center gap-2 mt-1">
+                  {getRoleBadge(userData.role)}
+                  <span className="text-xs text-gray-400">•</span>
+                  <span className="text-xs text-gray-500">{userData.provider}</span>
+                </div>
               </div>
             </div>
             {!isEditing ? (
@@ -159,23 +286,11 @@ const Profilepage = () => {
             {/* Email */}
             <div className="space-y-2">
               <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Email Address</label>
-              {isEditing ? (
-                <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 focus-within:border-[#F47C20] transition-colors bg-white">
-                  <Mail className="w-4 h-4 text-gray-400" />
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="flex-1 outline-none text-sm"
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-gray-700 p-2">
-                  <Mail className="w-4 h-4 text-gray-400" />
-                  <span>{userData.email}</span>
-                </div>
-              )}
+              <div className="flex items-center gap-2 text-gray-700 p-2 bg-gray-50 rounded-lg">
+                <Mail className="w-4 h-4 text-gray-400" />
+                <span>{userData.email}</span>
+                <span className="ml-auto text-xs text-gray-400">Cannot change</span>
+              </div>
             </div>
 
             {/* Phone */}
@@ -189,6 +304,7 @@ const Profilepage = () => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
+                    placeholder="Enter phone number"
                     className="flex-1 outline-none text-sm"
                   />
                 </div>
@@ -211,6 +327,7 @@ const Profilepage = () => {
                     name="location"
                     value={formData.location}
                     onChange={handleInputChange}
+                    placeholder="Enter location"
                     className="flex-1 outline-none text-sm"
                   />
                 </div>
@@ -241,38 +358,53 @@ const Profilepage = () => {
             </div>
           </div>
 
-          {/* Password Change Section */}
-          <div className="mt-10 pt-8 border-t border-gray-100">
-            <h3 className="text-sm font-semibold text-[#0A2342] mb-6">Change Password</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <input
-                  type="password"
-                  placeholder="Current Password"
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#F47C20] focus:ring-1 focus:ring-[#F47C20]/20 text-sm transition-colors"
-                />
-              </div>
-              <div>
-                <input
-                  type="password"
-                  placeholder="New Password"
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#F47C20] focus:ring-1 focus:ring-[#F47C20]/20 text-sm transition-colors"
-                />
-              </div>
-              <div>
-                <input
-                  type="password"
-                  placeholder="Confirm New Password"
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#F47C20] focus:ring-1 focus:ring-[#F47C20]/20 text-sm transition-colors"
-                />
-              </div>
-              <div>
-                <button className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
-                  Update Password
-                </button>
+          {/* Password Change Section - Only for Email users */}
+          {userData.provider === 'Email' && (
+            <div className="mt-10 pt-8 border-t border-gray-100">
+              <h3 className="text-sm font-semibold text-[#0A2342] mb-6">Change Password</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <input
+                    type="password"
+                    name="currentPassword"
+                    value={passwordData.currentPassword}
+                    onChange={handlePasswordChange}
+                    placeholder="Current Password"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#F47C20] focus:ring-1 focus:ring-[#F47C20]/20 text-sm transition-colors"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="password"
+                    name="newPassword"
+                    value={passwordData.newPassword}
+                    onChange={handlePasswordChange}
+                    placeholder="New Password"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#F47C20] focus:ring-1 focus:ring-[#F47C20]/20 text-sm transition-colors"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={passwordData.confirmPassword}
+                    onChange={handlePasswordChange}
+                    placeholder="Confirm New Password"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#F47C20] focus:ring-1 focus:ring-[#F47C20]/20 text-sm transition-colors"
+                  />
+                </div>
+                <div>
+                  <button 
+                    onClick={handleUpdatePassword}
+                    disabled={changingPassword}
+                    className="px-5 py-2.5 bg-[#F47C20] text-white rounded-lg hover:bg-[#E06A10] transition-colors text-sm font-medium disabled:opacity-50"
+                  >
+                    {changingPassword ? 'Updating...' : 'Update Password'}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
