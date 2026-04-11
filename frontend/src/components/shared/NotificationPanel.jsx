@@ -112,8 +112,14 @@ export default function NotificationPanel({ isOpen, onClose }) {
 
   return (
     isOpen && (
-      <div className="fixed inset-0 z-50 bg-black bg-opacity-50">
-        <div className="absolute right-0 top-0 h-full w-96 bg-white shadow-lg flex flex-col">
+      <div
+        className="fixed inset-0 z-50 bg-black/30"
+        onClick={onClose}
+      >
+        <div
+          className="absolute right-0 top-0 h-full w-96 bg-white shadow-lg flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center gap-2">
