@@ -1,22 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import axiosInstance from '../../api/axiosInstance.js';
-import { Bell, X, Check, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import axiosInstance from '../../utils/axiosConfig';
+import { Bell, X, Check, Trash2, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
 
-export default function NotificationPanel({ userId, isOpen, onClose }) {
+export default function NotificationPanel({ isOpen, onClose }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
+  const userId = user?.id || user?.email || localStorage.getItem('userId');
+
   // Fetch notifications
   const fetchNotifications = async (page = 0) => {
-    if (!userId) return;
+    if (!userId || userId === 'null' || userId === 'undefined') return;
     
     setLoading(true);
     try {
-      const response = await axiosInstance.get(`/api/notifications/${userId}?page=${page}&size=10`);
+      const response = await axiosInstance.get(`/notifications/${userId}?page=${page}&size=10`);
       if (response.data.success) {
         setNotifications(response.data.data);
         setTotalPages(response.data.totalPages);
@@ -25,7 +31,6 @@ export default function NotificationPanel({ userId, isOpen, onClose }) {
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
-      toast.error('Failed to load notifications');
     } finally {
       setLoading(false);
     }
@@ -33,10 +38,10 @@ export default function NotificationPanel({ userId, isOpen, onClose }) {
 
   // Fetch unread count
   const fetchUnreadCount = async () => {
-    if (!userId) return;
+    if (!userId || userId === 'null' || userId === 'undefined') return;
     
     try {
-      const response = await axiosInstance.get(`/api/notifications/${userId}/count`);
+      const response = await axiosInstance.get(`/notifications/${userId}/count`);
       if (response.data.success) {
         setUnreadCount(response.data.unreadCount);
       }
@@ -48,7 +53,7 @@ export default function NotificationPanel({ userId, isOpen, onClose }) {
   // Mark as read
   const handleMarkAsRead = async (notificationId) => {
     try {
-      const response = await axiosInstance.put(`/api/notifications/${notificationId}/mark-as-read`);
+      const response = await axiosInstance.put(`/notifications/${notificationId}/mark-as-read`);
       if (response.data.success) {
         fetchNotifications(currentPage);
         toast.success('Marked as read');
@@ -62,7 +67,7 @@ export default function NotificationPanel({ userId, isOpen, onClose }) {
   // Delete notification
   const handleDelete = async (notificationId) => {
     try {
-      const response = await axiosInstance.delete(`/api/notifications/${notificationId}`);
+      const response = await axiosInstance.delete(`/notifications/${notificationId}`);
       if (response.data.success) {
         fetchNotifications(currentPage);
         toast.success('Notification deleted');
@@ -76,7 +81,7 @@ export default function NotificationPanel({ userId, isOpen, onClose }) {
   // Mark all as read
   const handleMarkAllAsRead = async () => {
     try {
-      const response = await axiosInstance.put(`/api/notifications/${userId}/mark-all-as-read`);
+      const response = await axiosInstance.put(`/notifications/${userId}/mark-all-as-read`);
       if (response.data.success) {
         fetchNotifications(currentPage);
         toast.success('All marked as read');
@@ -88,7 +93,7 @@ export default function NotificationPanel({ userId, isOpen, onClose }) {
   };
 
   useEffect(() => {
-    if (isOpen && userId) {
+    if (isOpen && userId && userId !== 'null') {
       fetchNotifications();
       // Auto-refresh every 30 seconds
       const interval = setInterval(() => fetchNotifications(currentPage), 30000);
@@ -98,27 +103,10 @@ export default function NotificationPanel({ userId, isOpen, onClose }) {
 
   const getNotificationIcon = (category) => {
     switch (category) {
-      case 'BOOKING':
-        return '📅';
-      case 'TICKET':
-        return '🔧';
-      case 'SYSTEM':
-        return '⚙️';
-      default:
-        return '📬';
-    }
-  };
-
-  const getCategoryColor = (category) => {
-    switch (category) {
-      case 'BOOKING':
-        return 'bg-blue-50 border-l-4 border-blue-400';
-      case 'TICKET':
-        return 'bg-orange-50 border-l-4 border-orange-400';
-      case 'SYSTEM':
-        return 'bg-gray-50 border-l-4 border-gray-400';
-      default:
-        return 'bg-gray-50 border-l-4 border-gray-400';
+      case 'BOOKING': return '📅';
+      case 'TICKET': return '🔧';
+      case 'SYSTEM': return '⚙️';
+      default: return '📬';
     }
   };
 
@@ -149,7 +137,7 @@ export default function NotificationPanel({ userId, isOpen, onClose }) {
           {unreadCount > 0 && (
             <button
               onClick={handleMarkAllAsRead}
-              className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 border-b"
+              className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 border-b w-full text-left"
             >
               Mark all as read
             </button>
@@ -157,7 +145,7 @@ export default function NotificationPanel({ userId, isOpen, onClose }) {
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto">
-            {loading ? (
+            {loading && notifications.length === 0 ? (
               <div className="p-4 text-center text-gray-500">Loading...</div>
             ) : notifications.length === 0 ? (
               <div className="p-4 text-center text-gray-500">No notifications</div>
@@ -166,8 +154,8 @@ export default function NotificationPanel({ userId, isOpen, onClose }) {
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`p-4 hover:bg-gray-50 transition ${
-                      notification.isRead ? 'bg-white' : 'bg-blue-50'
+                    className={`p-4 hover:bg-gray-50 transition border-l-4 ${
+                      notification.read ? 'bg-white border-transparent' : 'bg-blue-50 border-blue-400'
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -175,20 +163,19 @@ export default function NotificationPanel({ userId, isOpen, onClose }) {
                         {getNotificationIcon(notification.category)}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm line-clamp-1">
+                        <h3 className={`font-semibold text-sm line-clamp-1 ${!notification.read ? 'text-blue-900' : 'text-gray-900'}`}>
                           {notification.title}
                         </h3>
                         <p className="text-sm text-gray-600 line-clamp-2 mt-1">
                           {notification.message}
                         </p>
                         <p className="text-xs text-gray-400 mt-2">
-                          {new Date(notification.createdAt).toLocaleDateString()}{' '}
-                          {new Date(notification.createdAt).toLocaleTimeString()}
+                          {new Date(notification.createdAt).toLocaleString()}
                         </p>
                       </div>
                     </div>
                     <div className="flex gap-2 mt-3 justify-end">
-                      {!notification.isRead && (
+                      {!notification.read && (
                         <button
                           onClick={() => handleMarkAsRead(notification.id)}
                           className="p-2 text-blue-600 hover:bg-blue-100 rounded"
@@ -233,6 +220,20 @@ export default function NotificationPanel({ userId, isOpen, onClose }) {
               </button>
             </div>
           )}
+          
+          {/* Footer with Preferences Link */}
+          <div className="p-4 border-t bg-gray-50 mt-auto">
+            <button
+              onClick={() => {
+                onClose();
+                navigate('/notification-preferences');
+              }}
+              className="w-full py-2 text-sm text-center text-blue-600 font-medium hover:text-blue-700 hover:underline flex items-center justify-center gap-2"
+            >
+              <Save className="w-4 h-4" />
+              Settings & Preferences
+            </button>
+          </div>
         </div>
       </div>
     )

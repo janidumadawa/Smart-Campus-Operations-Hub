@@ -4,22 +4,45 @@ import { Search, Clock, CheckCircle, AlertCircle, MessageSquare, X } from 'lucid
 import toast from 'react-hot-toast';
 import { useTickets } from '../tickets/hooks/useTickets';
 import CommentSection from '../tickets/components/CommentSection';
+import { API_ORIGIN } from '../../utils/axiosConfig';
+import { useAuth } from '../../context/AuthContext';  
+import TicketList from '../tickets/components/TicketList';  
 
 // TODO: Replace with real authentication system
 const ADMIN_USER = { id: 'admin-001', name: 'Admin User', role: 'ADMIN' };
-const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '');
 
 const TicketManagement = () => {
-  const { getAdminTickets, updateStatus, assignTechnician, loading, error } = useTickets();
+  const { getAdminTickets, getAvailableResources, updateStatus, assignTechnician, loading, error, getTechnicians } = useTickets();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [noteText, setNoteText] = useState('');
   const [tickets, setTickets] = useState([]);
-  const [techId, setTechId] = useState('');
-  const [techName, setTechName] = useState('');
+  const [resources, setResources] = useState([]);
   const [draftStatus, setDraftStatus] = useState('');
   const [activeImg, setActiveImg] = useState(null);
+  const [technicians, setTechnicians] = useState([]);
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState('');
+  const { isAdmin, isTechnician, user } = useAuth(); 
+  const [technicianId, setTechnicianId] = useState(null);  
+
+
+
+  useEffect(() => {
+  const fetchTechnicians = async () => {
+    const data = await getTechnicians();
+    if (Array.isArray(data)) setTechnicians(data);
+  };
+  fetchTechnicians();
+}, []);
+
+  useEffect(() => {
+    if (isTechnician() && user) {
+      setTechnicianId(user.id);
+    }
+  }, [isTechnician, user]);
+
+
 
   const loadTickets = async () => {
     const params = {};
@@ -33,33 +56,59 @@ const TicketManagement = () => {
   }, [filterStatus]);
 
   useEffect(() => {
+    const loadResources = async () => {
+      const data = await getAvailableResources();
+      if (Array.isArray(data)) setResources(data);
+    };
+
+    loadResources();
+  }, [getAvailableResources]);
+
+  useEffect(() => {
     setDraftStatus(selectedTicket?.status || '');
   }, [selectedTicket]);
+
+  const resourcesById = useMemo(() => {
+    return resources.reduce((acc, resource) => {
+      if (resource?.id) acc[resource.id] = resource.name || resource.id;
+      return acc;
+    }, {});
+  }, [resources]);
+
+  const getTicketResourceLabel = (ticket) => {
+    if (!ticket) return '-';
+    return ticket.resourceName || resourcesById[ticket.resourceId] || ticket.resourceId || ticket.location || '-';
+  };
 
   const filteredTickets = useMemo(() => (
     tickets.filter((ticket) => {
       const title = (ticket.title || '').toLowerCase();
-      const location = (ticket.location || '').toLowerCase();
-      const resource = (ticket.resourceId || '').toLowerCase();
+      const resourceName = getTicketResourceLabel(ticket).toLowerCase();
+      const ticketId = (ticket.id || '').toLowerCase();
       const term = searchTerm.toLowerCase();
-      return title.includes(term) || location.includes(term) || resource.includes(term);
+      return title.includes(term) || resourceName.includes(term) || ticketId.includes(term);
     })
-  ), [tickets, searchTerm]);
+  ), [tickets, searchTerm, resourcesById]);
 
   const handleAssign = async () => {
-    if (!selectedTicket || !techId || !techName) return;
-    const updated = await assignTechnician(selectedTicket.id, {
-      technicianId: techId,
-      technicianName: techName,
-    });
-    if (updated) {
-      toast.success(`Ticket assigned to ${techName}`);
-      setSelectedTicket(updated);
-      setTechId('');
-      setTechName('');
-      await loadTickets();
-    }
-  };
+  if (!selectedTicket || !selectedTechnicianId) return;
+  
+  const selectedTech = technicians.find(t => t.id === selectedTechnicianId);
+  if (!selectedTech) return;
+  
+  const updated = await assignTechnician(selectedTicket.id, {
+    technicianId: selectedTech.id,
+    technicianName: selectedTech.name,
+  });
+  if (updated) {
+    toast.success(`Ticket assigned to ${selectedTech.name}`);
+    setSelectedTicket(updated);
+    setSelectedTechnicianId('');
+    await loadTickets();
+  }
+};
+
+
 
   const handleUpdateStatus = async (newStatus) => {
     if (!selectedTicket) return;
@@ -82,24 +131,26 @@ const TicketManagement = () => {
     setTickets((prev) => prev.map((t) => (t.id === updatedTicket.id ? updatedTicket : t)));
   };
 
-  const handleSaveChanges = async () => {
-    if (!selectedTicket) return;
+const handleSaveChanges = async () => {
+  if (!selectedTicket) return;
 
-    let updatedTicket = selectedTicket;
-    let didChange = false;
+  let updatedTicket = selectedTicket;
+  let didChange = false;
 
-    if (techId && techName) {
+  if (selectedTechnicianId) {
+    const selectedTech = technicians.find(t => t.id === selectedTechnicianId);
+    if (selectedTech) {
       const assigned = await assignTechnician(updatedTicket.id, {
-        technicianId: techId,
-        technicianName: techName,
+        technicianId: selectedTech.id,
+        technicianName: selectedTech.name,
       });
       if (assigned) {
         updatedTicket = assigned;
         didChange = true;
-        setTechId('');
-        setTechName('');
+        setSelectedTechnicianId(''); // Reset after assignment
       }
     }
+  }
 
     let targetStatus = draftStatus || updatedTicket.status;
     if (targetStatus === 'OPEN' && updatedTicket.status === 'IN_PROGRESS') {
@@ -162,6 +213,20 @@ const TicketManagement = () => {
     const normalized = url.startsWith('/') ? url : `/${url}`;
     return `${API_ORIGIN}${normalized}`;
   };
+
+    if (isTechnician()) {
+    return (
+      <div>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-[#0A2342]">My Assigned Tickets</h1>
+          <p className="text-gray-600 mt-1">Tickets assigned to you for resolution</p>
+        </div>
+        
+        <TicketList technicianId={technicianId} />
+      </div>
+    );
+  }
+
 
   return (
     <div>
@@ -259,7 +324,7 @@ const TicketManagement = () => {
                 <tr key={ticket.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm text-gray-600">#{ticket.id?.slice(-6)}</td>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{ticket.title}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{ticket.resourceId || ticket.location || '-'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{getTicketResourceLabel(ticket)}</td>
                   <td className="px-6 py-4">{getPriorityBadge(ticket.priority)}</td>
                   <td className="px-6 py-4">{getStatusBadge(ticket.status)}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{ticket.assignedTechnicianName || 'Unassigned'}</td>
@@ -299,7 +364,7 @@ const TicketManagement = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs text-gray-500">Resource</label>
-                  <p className="text-sm font-medium text-gray-900">{selectedTicket.resourceId || selectedTicket.location || '-'}</p>
+                  <p className="text-sm font-medium text-gray-900">{getTicketResourceLabel(selectedTicket)}</p>
                 </div>
                 <div>
                   <label className="text-xs text-gray-500">Category</label>
@@ -327,31 +392,32 @@ const TicketManagement = () => {
 
               {/* Assign Technician */}
               {(!selectedTicket.assignedTechnicianName || selectedTicket.assignedTechnicianName === '') && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Assign Technician</label>
-                  <div className="flex gap-2">
-                    <input
-                      value={techId}
-                      onChange={(e) => setTechId(e.target.value)}
-                      placeholder="Technician ID"
-                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#F47C20] text-sm"
-                    />
-                    <input
-                      value={techName}
-                      onChange={(e) => setTechName(e.target.value)}
-                      placeholder="Technician Name"
-                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#F47C20] text-sm"
-                    />
-                    <button
-                      onClick={handleAssign}
-                      disabled={loading}
-                      className="px-4 py-2 bg-[#0A2342] text-white rounded-lg text-sm hover:bg-blue-900 disabled:opacity-60"
-                    >
-                      Assign
-                    </button>
-                  </div>
-                </div>
-              )}
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-2">Assign Technician</label>
+    <div className="flex gap-2">
+      <select
+        value={selectedTechnicianId}
+        onChange={(e) => setSelectedTechnicianId(e.target.value)}
+        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#F47C20] text-sm"
+      >
+        <option value="">Select Technician...</option>
+        {technicians.map((tech) => (
+          <option key={tech.id} value={tech.id}>
+            {tech.name} ({tech.email})
+          </option>
+        ))}
+      </select>
+      <button
+        onClick={handleAssign}
+        disabled={loading || !selectedTechnicianId}
+        className="px-4 py-2 bg-[#0A2342] text-white rounded-lg text-sm hover:bg-blue-900 disabled:opacity-60"
+      >
+        Assign
+      </button>
+    </div>
+  </div>
+)}
+
 
               {/* Resolution Notes */}
               {selectedTicket.resolutionNotes && (

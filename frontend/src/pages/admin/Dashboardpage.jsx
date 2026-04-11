@@ -1,30 +1,41 @@
 // frontend/src/pages/admin/Dashboardpage.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Package, 
-  Calendar, 
-  Clock, 
-  AlertCircle, 
+import {
+  Package,
+  Calendar,
+  Clock,
+  AlertCircle,
   CheckCircle,
   Users
 } from 'lucide-react';
+
+import axiosInstance from '../../utils/axiosConfig';
 
 const Dashboardpage = () => {
   const [totalResources, setTotalResources] = useState('...');
 
   useEffect(() => {
-    fetch('http://localhost:8080/resources?size=1')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.totalElements !== undefined) {
-          setTotalResources(data.totalElements.toString());
-        } else if (data && data.content) {
-          setTotalResources(data.content.length.toString());
-        }
-      })
-      .catch(err => console.error('Error fetching resources:', err));
+      axiosInstance.get('/resources', { params: { size: 1 } })
+        .then(response => {
+          const data = response.data;
+          if (data && data.totalElements !== undefined) {
+            setTotalResources(data.totalElements.toString());
+          } else if (data && data.content) {
+            setTotalResources(data.content.length.toString());
+          }
+        })
+        .catch(err => console.error('Error fetching resources:', err));
   }, []);
+
+  const fetchStats = async () => {
+    try {
+      const response = await axiosInstance.get('/resources', { params: { size: 1 } });
+      // process response
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
 
   const stats = [
     { title: 'Total Resources', value: totalResources, icon: Package, color: '#F47C20', change: '+12%' },
@@ -95,9 +106,8 @@ const Dashboardpage = () => {
                     <td className="px-6 py-3 text-sm text-gray-600">{booking.user}</td>
                     <td className="px-6 py-3 text-sm text-gray-600">{booking.date}</td>
                     <td className="px-6 py-3">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        booking.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-                      }`}>
+                      <span className={`px-2 py-1 text-xs rounded-full ${booking.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                        }`}>
                         {booking.status}
                       </span>
                     </td>
@@ -119,25 +129,57 @@ const Dashboardpage = () => {
               <div key={ticket.id} className="px-6 py-4 hover:bg-gray-50">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-medium text-gray-900">{ticket.title}</h3>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    ticket.priority === 'High' ? 'bg-red-100 text-red-800' :
+                  <span className={`px-2 py-1 text-xs rounded-full ${ticket.priority === 'High' ? 'bg-red-100 text-red-800' :
                     ticket.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
+                      'bg-green-100 text-green-800'
+                    }`}>
                     {ticket.priority}
                   </span>
                 </div>
                 <p className="text-sm text-gray-600">Resource: {ticket.resource}</p>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    ticket.status === 'Open' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
-                  }`}>
+                  <span className={`px-2 py-1 text-xs rounded-full ${ticket.status === 'Open' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                    }`}>
                     {ticket.status}
                   </span>
                 </div>
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* SYSTEM NOTIFICATIONS SECTION */}
+      <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-[#0A2342]">Recent System Activity</h2>
+          <Link to="/admin/notifications" className="text-sm text-[#F47C20] hover:text-[#E06A10]">Full Alerts History</Link>
+        </div>
+        <div className="p-6">
+           <p className="text-sm text-gray-500 mb-4">Check the notification bell in the top right for real-time alerts.</p>
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                 <h4 className="font-medium text-blue-900 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    New Bookings
+                 </h4>
+                 <p className="text-xs text-blue-700 mt-1">Visit Booking Management to approve pending requests.</p>
+              </div>
+              <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
+                 <h4 className="font-medium text-orange-900 flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Pending Tickets
+                 </h4>
+                 <p className="text-xs text-orange-700 mt-1">Respond to maintenance issues submitted by students.</p>
+              </div>
+              <div className="p-4 bg-green-50 rounded-lg border border-green-100">
+                 <h4 className="font-medium text-green-900 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    System Status
+                 </h4>
+                 <p className="text-xs text-green-700 mt-1">All services are currently operational.</p>
+              </div>
+           </div>
         </div>
       </div>
     </div>

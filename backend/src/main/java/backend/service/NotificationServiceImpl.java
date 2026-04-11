@@ -6,6 +6,7 @@ import backend.model.Notification;
 import backend.model.NotificationPreference;
 import backend.repository.NotificationRepository;
 import backend.repository.NotificationPreferenceRepository;
+import backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +29,9 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Autowired
     private NotificationPreferenceRepository preferenceRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired(required = false)
     private JavaMailSender mailSender;
@@ -73,7 +77,7 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Override
     public long getUnreadCount(String userId) {
-        return notificationRepository.countByRecipientIdAndIsReadFalse(userId);
+        return notificationRepository.countByRecipientIdAndReadFalse(userId);
     }
 
     /**
@@ -81,7 +85,7 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Override
     public List<Notification> getUnreadNotifications(String userId) {
-        return notificationRepository.findByRecipientIdAndIsReadFalseOrderByCreatedAtDesc(userId);
+        return notificationRepository.findByRecipientIdAndReadFalseOrderByCreatedAtDesc(userId);
     }
 
     /**
@@ -168,12 +172,19 @@ public class NotificationServiceImpl implements NotificationService {
     public NotificationPreference updatePreferences(String userId, NotificationPreference preferences) {
         NotificationPreference existing = getOrCreatePreferences(userId);
         
+        // Ensure userId is preserved and correct
+        existing.setUserId(userId);
         existing.setBookingAlerts(preferences.isBookingAlerts());
         existing.setTicketUpdates(preferences.isTicketUpdates());
         existing.setEmailNotifications(preferences.isEmailNotifications());
         existing.setCommentNotifications(preferences.isCommentNotifications());
         
-        return preferenceRepository.save(existing);
+        try {
+            return preferenceRepository.save(existing);
+        } catch (Exception e) {
+            logger.severe("Failed to save preferences for user " + userId + ": " + e.getMessage());
+            throw new RuntimeException("Could not save preferences: " + e.getMessage());
+        }
     }
 
     /**
@@ -261,9 +272,9 @@ public class NotificationServiceImpl implements NotificationService {
      * Placeholder: Get email for user (integrate with User entity later)
      */
     private String getEmailForUser(String userId) {
-        // TODO: Implement user lookup to get email
-        // This depends on how your User entity is structured
-        return null;
+        return userRepository.findById(userId)
+                .map(backend.model.User::getEmail)
+                .orElse(null);
     }
 
     /**

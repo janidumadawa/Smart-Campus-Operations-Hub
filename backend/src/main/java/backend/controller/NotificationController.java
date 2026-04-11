@@ -19,17 +19,16 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/notifications")
-@CrossOrigin(origins = "*")
 public class NotificationController {
 
     @Autowired
     private NotificationService notificationService;
 
     /**
-     * GET /api/notifications/{userId}
+     * GET /api/notifications/{userId:.+}
      * Get paginated notifications for a user
      */
-    @GetMapping("/{userId}")
+    @GetMapping("/{userId:.+}")
     public ResponseEntity<Map<String, Object>> getUserNotifications(
             @PathVariable String userId,
             @RequestParam(defaultValue = "0") int page,
@@ -69,7 +68,7 @@ public class NotificationController {
      * GET /api/notifications/{userId}/count
      * Get unread notification count
      */
-    @GetMapping("/{userId}/count")
+    @GetMapping("/{userId:.+}/count")
     public ResponseEntity<Map<String, Object>> getUnreadCount(@PathVariable String userId) {
         long count = notificationService.getUnreadCount(userId);
         
@@ -134,6 +133,7 @@ public class NotificationController {
      */
     @PutMapping("/{notificationId}/mark-as-read")
     public ResponseEntity<Map<String, Object>> markAsRead(@PathVariable String notificationId) {
+        System.out.println("[TRACE] Marking notification as read: " + notificationId);
         try {
             Notification notification = notificationService.markAsRead(notificationId);
             
@@ -215,22 +215,30 @@ public class NotificationController {
      * GET /api/notifications/preferences/{userId}
      * Get notification preferences for a user
      */
-    @GetMapping("/preferences/{userId}")
+    @GetMapping("/preferences/{userId:.+}")
     public ResponseEntity<Map<String, Object>> getPreferences(@PathVariable String userId) {
-        NotificationPreference preferences = notificationService.getUserPreferences(userId);
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", preferences);
-        
-        return ResponseEntity.ok(response);
+        System.out.println("[DEBUG] GET preferences for userId: " + userId);
+        try {
+            NotificationPreference preferences = notificationService.getUserPreferences(userId);
+            System.out.println("[DEBUG] Successfully retrieved preferences for: " + userId);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", preferences);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("[DEBUG] Error getting preferences for " + userId + ": " + e.getMessage());
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
     /**
      * POST /api/notifications/preferences/{userId}
      * Create or update notification preferences
      */
-    @PostMapping("/preferences/{userId}")
+    @PostMapping("/preferences/{userId:.+}")
     public ResponseEntity<Map<String, Object>> updatePreferences(
             @PathVariable String userId,
             @RequestBody NotificationPreference preferenceRequest) {

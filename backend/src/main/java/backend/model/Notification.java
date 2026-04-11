@@ -23,7 +23,7 @@ public class Notification {
     private String relatedResourceId;  // Booking ID, Ticket ID, etc.
     private String relatedResourceType; // BOOKING, TICKET
     private LocalDateTime createdAt;
-    private boolean isRead;
+    private boolean read;
     private boolean emailSent;
 
     // Constructors
@@ -39,7 +39,7 @@ public class Notification {
         this.relatedResourceId = relatedResourceId;
         this.relatedResourceType = relatedResourceType;
         this.createdAt = LocalDateTime.now();
-        this.isRead = false;
+        this.read = false;
         this.emailSent = false;
     }
 
@@ -126,12 +126,12 @@ public class Notification {
 
     @JsonProperty("isRead")
     public boolean isRead() {
-        return isRead;
+        return read;
     }
 
     @JsonProperty("isRead")
     public void setRead(boolean read) {
-        isRead = read;
+        this.read = read;
     }
 
     public boolean isEmailSent() {

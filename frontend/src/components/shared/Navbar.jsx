@@ -1,28 +1,19 @@
-// frontend/src/components/shared/Navbar.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, User, LogOut, Settings, Bell } from 'lucide-react';
+import { Menu, X, User, LogOut, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-<<<<<<< HEAD
+import { useAuth } from '../../context/AuthContext';
 import NotificationPanel from './NotificationPanel';
-import axiosInstance from "../../api/axiosInstance.js";
-=======
-import { useAuth } from "../../context/AuthContext";
->>>>>>> origin/dev
+import axiosInstance from '../../utils/axiosConfig';
 
 const Navbar = ({ activeSection }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
-<<<<<<< HEAD
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [notificationOpen, setNotificationOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
-=======
->>>>>>> origin/dev
     const navigate = useNavigate();
-    const { user, logout } = useAuth();
-
-    const userId = localStorage.getItem('userId') || sessionStorage.getItem('userId');
+    const { user, logout, isAdmin, isTechnician, getUserInitial } = useAuth();
+    const userId = user?.id || user?.email || localStorage.getItem('userId');
 
     const navItems = [
         { name: 'Home', path: '/' },
@@ -31,11 +22,11 @@ const Navbar = ({ activeSection }) => {
         { name: 'Tickets', path: '/tickets' },
     ];
 
-    // Fetch unread count
+    // Fetch unread notification count
     const fetchUnreadCount = async () => {
         if (!userId) return;
         try {
-            const response = await axiosInstance.get(`/api/notifications/${userId}/count`);
+            const response = await axiosInstance.get(`/notifications/${userId}/count`);
             if (response.data.success) {
                 setUnreadCount(response.data.unreadCount);
             }
@@ -52,39 +43,39 @@ const Navbar = ({ activeSection }) => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-<<<<<<< HEAD
-    // Check if user is logged in
     useEffect(() => {
-        setIsLoggedIn(!!userId);
         if (userId) {
             fetchUnreadCount();
-            const interval = setInterval(fetchUnreadCount, 30000); // Refresh every 30 seconds
+            const interval = setInterval(fetchUnreadCount, 30000);
             return () => clearInterval(interval);
         }
     }, [userId]);
-=======
+
     const handleLogout = () => {
         logout();
-        navigate("/login");
+        navigate('/login');
+        setIsOpen(false);
     };
->>>>>>> origin/dev
+
+    const handleProfile = () => {
+        navigate('/profile');
+        setIsOpen(false);
+    };
 
     return (
         <>
-            {/* Spacer to prevent content from going under navbar */}
             <div className="h-24"></div>
 
             <nav className={`fixed top-6 left-0 right-0 z-50 transition-all duration-500 px-4 md:px-8`}>
                 <div className="max-w-7xl mx-auto">
-                    {/* Navbar Container with Glassmorphism Effect */}
                     <motion.div
                         className={`
-        rounded-2xl backdrop-blur-md transition-all duration-300
-        ${scrolled
+                            rounded-2xl backdrop-blur-md transition-all duration-300
+                            ${scrolled
                                 ? 'bg-gradient-to-r from-[#0A2342]/90 to-[#0A2342]/80 shadow-xl shadow-white/20 border border-[#F47C20]/30'
                                 : 'bg-gradient-to-r from-[#0A2342]/80 to-[#0A2342]/70 shadow-lg shadow-white/10 border border-[#F47C20]/20'
                             }
-    `}
+                        `}
                         animate={{
                             opacity: scrolled ? 0 : 1,
                             visibility: scrolled ? "hidden" : "visible"
@@ -92,9 +83,7 @@ const Navbar = ({ activeSection }) => {
                         transition={{ duration: 0.3 }}
                     >
                         <div className="container-custom">
-                            {/* 3-column layout */}
                             <div className="flex items-center justify-between h-16 md:h-20">
-                                {/* LEFT: Logo */}
                                 <div className="flex justify-start">
                                     <Link to="/" className="flex items-center gap-2 group">
                                         <img
@@ -105,7 +94,6 @@ const Navbar = ({ activeSection }) => {
                                     </Link>
                                 </div>
 
-                                {/* CENTER: Nav Items - Desktop Only */}
                                 <div className="hidden md:flex justify-center gap-8 flex-1">
                                     {navItems.map((item) => (
                                         <Link
@@ -125,12 +113,10 @@ const Navbar = ({ activeSection }) => {
                                     ))}
                                 </div>
 
-                                {/* RIGHT: Auth & Mobile Menu */}
                                 <div className="flex justify-end items-center gap-3">
-                                    {/* Desktop Auth Buttons */}
-<<<<<<< HEAD
                                     <div className="hidden md:flex gap-3 items-center">
-                                        {isLoggedIn && (
+                                        {/* Notification Bell (logged in users) */}
+                                        {user && (
                                             <button
                                                 onClick={() => setNotificationOpen(!notificationOpen)}
                                                 className="relative p-2 rounded-full hover:bg-white/10 transition-all duration-300"
@@ -143,11 +129,8 @@ const Navbar = ({ activeSection }) => {
                                                 )}
                                             </button>
                                         )}
-                                        {!isLoggedIn ? (
-=======
-                                    <div className="hidden md:flex gap-3">
+
                                         {!user ? (
->>>>>>> origin/dev
                                             <>
                                                 <Link to="/login" className="px-5 py-2 rounded-full font-semibold transition-all duration-300 border-2 border-[#F47C20] text-[#F47C20] hover:bg-[#F47C20] hover:text-white">
                                                     Login
@@ -158,17 +141,50 @@ const Navbar = ({ activeSection }) => {
                                             </>
                                         ) : (
                                             <div className="flex items-center gap-3">
-                                                <button
-                                                    onClick={handleLogout}
-                                                    className="px-5 py-2 rounded-full font-semibold transition-all duration-300 bg-red-500 text-white hover:bg-red-600"
-                                                >
-                                                    Logout
-                                                </button>
+                                                {(isAdmin() || isTechnician()) && (
+                                                    <Link
+                                                        to="/admin"
+                                                        className="px-4 py-2 rounded-full font-semibold transition-all duration-300 bg-[#F47C20] text-white hover:bg-[#E06A10]"
+                                                    >
+                                                        Dashboard
+                                                    </Link>
+                                                )}
+                                                <div className="relative group">
+                                                    <button className="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-white/10 transition-all">
+                                                        <div className="w-8 h-8 rounded-full bg-[#F47C20] flex items-center justify-center text-white font-bold">
+                                                            {getUserInitial()}
+                                                        </div>
+                                                        <span className="text-white text-sm font-medium">
+                                                            {user?.name?.split(' ')[0]}
+                                                        </span>
+                                                    </button>
+                                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                                                        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                                                            <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                                                            <p className="text-xs text-gray-500">{user?.email}</p>
+                                                        </div>
+                                                        <div className="py-2">
+                                                            <button
+                                                                onClick={handleProfile}
+                                                                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                                            >
+                                                                <User className="w-4 h-4" />
+                                                                Profile
+                                                            </button>
+                                                            <button
+                                                                onClick={handleLogout}
+                                                                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                                                            >
+                                                                <LogOut className="w-4 h-4" />
+                                                                Logout
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Mobile Menu Button */}
                                     <button
                                         onClick={() => setIsOpen(!isOpen)}
                                         className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-all duration-300"
@@ -183,7 +199,6 @@ const Navbar = ({ activeSection }) => {
                         </div>
                     </motion.div>
 
-                    {/* MOBILE MENU DROPDOWN */}
                     <AnimatePresence>
                         {isOpen && (
                             <motion.div
@@ -224,15 +239,29 @@ const Navbar = ({ activeSection }) => {
                                                 </Link>
                                             </>
                                         ) : (
-                                            <button
-                                                onClick={() => {
-                                                    handleLogout();
-                                                    setIsOpen(false);
-                                                }}
-                                                className="px-4 py-3 text-center bg-red-50 text-red-600 rounded-xl font-semibold hover:bg-red-100 transition-all duration-300"
-                                            >
-                                                Logout
-                                            </button>
+                                            <>
+                                                {(isAdmin() || isTechnician()) && (
+                                                    <Link
+                                                        to="/admin"
+                                                        onClick={() => setIsOpen(false)}
+                                                        className="px-4 py-3 text-center bg-[#F47C20] text-white rounded-xl font-semibold hover:bg-[#E06A10]"
+                                                    >
+                                                        Dashboard
+                                                    </Link>
+                                                )}
+                                                <button
+                                                    onClick={handleProfile}
+                                                    className="px-4 py-3 text-center text-gray-700 hover:bg-gray-50 rounded-xl font-medium"
+                                                >
+                                                    Profile
+                                                </button>
+                                                <button
+                                                    onClick={handleLogout}
+                                                    className="px-4 py-3 text-center bg-red-50 text-red-600 rounded-xl font-semibold hover:bg-red-100 transition-all duration-300"
+                                                >
+                                                    Logout
+                                                </button>
+                                            </>
                                         )}
                                     </div>
                                 </div>
@@ -243,7 +272,7 @@ const Navbar = ({ activeSection }) => {
             </nav>
 
             {/* Notification Panel */}
-            <NotificationPanel 
+            <NotificationPanel
                 userId={userId}
                 isOpen={notificationOpen}
                 onClose={() => setNotificationOpen(false)}

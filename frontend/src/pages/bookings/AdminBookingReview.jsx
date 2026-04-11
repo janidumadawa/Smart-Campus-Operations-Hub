@@ -1,158 +1,105 @@
-import React, { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import Footer from "../../components/shared/Footer";
-import { getBookings, saveBookings, getStatusDotStyle } from "../../utils/bookingData";
+import React, { useState } from 'react';
+import { X, CheckCircle, XCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
+import axiosInstance from '../../utils/axiosConfig';
 
-const AdminBookingReview = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
+const AdminBookingReview = ({ booking, onClose, onSuccess }) => {
+  const [reason, setReason] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const allBookings = getBookings();
-  const booking = allBookings.find((item) => String(item.id) === String(id));
-
-  const [reason, setReason] = useState(booking?.adminReason || "");
-
-  if (!booking) {
-    return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="container-custom px-4 py-20 text-center">
-          <h2 className="text-3xl font-bold text-slate-900">
-            Booking Not Found
-          </h2>
-          <Link
-            to="/admin/bookings"
-            className="mt-6 inline-block rounded-2xl bg-[#F47C20] px-6 py-3 font-semibold text-white"
-          >
-            Back to Admin Bookings
-          </Link>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  const handleApprove = () => {
-    const updatedBookings = allBookings.map((item) =>
-      item.id === booking.id
-        ? { ...item, status: "APPROVED", adminReason: "" }
-        : item
-    );
-
-    saveBookings(updatedBookings);
-    navigate("/admin/bookings");
+  const handleApprove = async () => {
+    setLoading(true);
+    try {
+      await axiosInstance.patch(`/bookings/${booking.id}/review`, {
+        status: 'APPROVED',
+        adminReason: ''
+      });
+      toast.success('Booking approved');
+      onSuccess();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to approve');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!reason.trim()) {
-      alert("Please enter rejection reason.");
+      toast.error('Please provide a rejection reason');
       return;
     }
-
-    const updatedBookings = allBookings.map((item) =>
-      item.id === booking.id
-        ? { ...item, status: "REJECTED", adminReason: reason }
-        : item
-    );
-
-    saveBookings(updatedBookings);
-    navigate("/admin/bookings");
+    setLoading(true);
+    try {
+      await axiosInstance.patch(`/bookings/${booking.id}/review`, {
+        status: 'REJECTED',
+        adminReason: reason
+      });
+      toast.success('Booking rejected');
+      onSuccess();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to reject');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="container-custom px-4 py-16">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-[#F47C20]">
-              Admin Review
-            </p>
-            <h1 className="text-4xl font-bold text-slate-900">
-              Review Booking Request
-            </h1>
-          </div>
-
-          <Link
-            to="/admin/bookings"
-            className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white"
-          >
-            Back
-          </Link>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-[#0A2342]">Review Booking</h2>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
         </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <div className="mb-8">
-            <div className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-4 py-2">
-              <span
-                className={`h-3 w-3 rounded-full ${getStatusDotStyle(
-                  booking.status
-                )}`}
-              ></span>
-              <span className="text-sm font-semibold text-slate-700">
-                {booking.status}
-              </span>
-            </div>
+        <div className="p-6 space-y-4">
+          {/* Booking Summary */}
+          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+            <p><span className="font-medium">Resource:</span> {booking.resourceName}</p>
+            <p><span className="font-medium">Requested by:</span> {booking.requestedBy}</p>
+            <p><span className="font-medium">Email:</span> {booking.email}</p>
+            <p><span className="font-medium">Date:</span> {booking.date}</p>
+            <p><span className="font-medium">Time:</span> {booking.startTime} - {booking.endTime}</p>
+            <p><span className="font-medium">Attendees:</span> {booking.attendees}</p>
+            <p><span className="font-medium">Purpose:</span> {booking.purpose}</p>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <DetailCard title="Requested By" value={booking.requestedBy} />
-            <DetailCard title="Email" value={booking.email} />
-            <DetailCard title="Resource" value={booking.resource} />
-            <DetailCard title="Date" value={booking.date} />
-            <DetailCard
-              title="Time"
-              value={`${booking.startTime} - ${booking.endTime}`}
-            />
-            <DetailCard title="Attendees" value={booking.attendees} />
-          </div>
-
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <h3 className="mb-2 text-lg font-semibold text-slate-900">
-              Purpose
-            </h3>
-            <p className="text-slate-600">{booking.purpose}</p>
-          </div>
-
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
-            <label className="mb-2 block text-sm font-semibold text-slate-700">
-              Rejection Reason
+          {/* Rejection Reason Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Rejection Reason <span className="text-red-500">*</span>
             </label>
             <textarea
-              rows="4"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Enter rejection reason"
-              className="w-full resize-none rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#F47C20] focus:ring-4 focus:ring-orange-100"
+              rows="3"
+              placeholder="Required if rejecting..."
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#F47C20] resize-none"
             />
           </div>
 
-          <div className="mt-8 flex flex-wrap gap-4">
+          {/* Actions */}
+          <div className="flex gap-3 pt-2">
             <button
               onClick={handleApprove}
-              className="rounded-2xl bg-emerald-500 px-6 py-3 font-semibold text-white transition hover:bg-emerald-600"
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
             >
-              Approve Booking
+              <CheckCircle className="w-4 h-4" />
+              Approve
             </button>
-
             <button
               onClick={handleReject}
-              className="rounded-2xl bg-red-500 px-6 py-3 font-semibold text-white transition hover:bg-red-600"
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
             >
-              Reject Booking
+              <XCircle className="w-4 h-4" />
+              Reject
             </button>
           </div>
         </div>
       </div>
-
-      <Footer />
-    </div>
-  );
-};
-
-const DetailCard = ({ title, value }) => {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-      <p className="text-sm font-semibold text-slate-500">{title}</p>
-      <h3 className="mt-2 text-lg font-bold text-slate-900">{value}</h3>
     </div>
   );
 };

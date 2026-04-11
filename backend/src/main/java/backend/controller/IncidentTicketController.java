@@ -54,10 +54,14 @@ public class IncidentTicketController {
             @RequestParam(required = false) String technicianId,
             @RequestParam(required = false) String priority) {
 
-        if (status       != null) return ResponseEntity.ok(ticketService.getTicketsByStatus(status));
-        if (userId       != null) return ResponseEntity.ok(ticketService.getTicketsByUser(userId));
-        if (technicianId != null) return ResponseEntity.ok(ticketService.getTicketsByTechnician(technicianId));
-        if (priority     != null) return ResponseEntity.ok(ticketService.getTicketsByPriority(priority));
+        if (status != null)
+            return ResponseEntity.ok(ticketService.getTicketsByStatus(status));
+        if (userId != null)
+            return ResponseEntity.ok(ticketService.getTicketsByUser(userId));
+        if (technicianId != null)
+            return ResponseEntity.ok(ticketService.getTicketsByTechnician(technicianId));
+        if (priority != null)
+            return ResponseEntity.ok(ticketService.getTicketsByPriority(priority));
         return ResponseEntity.ok(ticketService.getAllTickets());
     }
 
@@ -157,4 +161,6 @@ public class IncidentTicketController {
         ticketService.deleteTicket(id);
         return ResponseEntity.noContent().build();
     }
+
+
 }

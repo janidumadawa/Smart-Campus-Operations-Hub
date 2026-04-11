@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useAuth } from '../../../context/AuthContext';
 import { useTickets } from "../hooks/useTickets";
 import CommentSection from "./CommentSection";
 import ResourceDetailsCard from "./ResourceDetailsCard";
@@ -6,38 +7,39 @@ import ActivityTimeline from "./ActivityTimeline";
 
 // TODO: Replace with real authentication system
 // For now using mock admin user - integrate with your auth provider
-const MOCK_USER = { id: "user-001", name: "John Doe", role: "ADMIN" };
+// const MOCK_USER = { id: "user-001", name: "John Doe", role: "ADMIN" };
 
 const STATUS_STYLES = {
-  OPEN:        "bg-blue-100 text-blue-700",
+  OPEN: "bg-blue-100 text-blue-700",
   IN_PROGRESS: "bg-yellow-100 text-yellow-700",
-  RESOLVED:    "bg-green-100 text-green-700",
-  CLOSED:      "bg-gray-200 text-gray-600",
-  REJECTED:    "bg-red-100 text-red-600",
+  RESOLVED: "bg-green-100 text-green-700",
+  CLOSED: "bg-gray-200 text-gray-600",
+  REJECTED: "bg-red-100 text-red-600",
 };
 
 const NEXT_STATUSES = {
-  OPEN:        ["IN_PROGRESS", "REJECTED"],
-  IN_PROGRESS: ["RESOLVED",    "REJECTED"],
-  RESOLVED:    ["CLOSED"],
-  CLOSED:      [],
-  REJECTED:    [],
+  OPEN: ["IN_PROGRESS", "REJECTED"],
+  IN_PROGRESS: ["RESOLVED", "REJECTED"],
+  RESOLVED: ["CLOSED"],
+  CLOSED: [],
+  REJECTED: [],
 };
 
 const ACTIVITY_ICONS = {
   STATUS_CHANGE: "🔄",
-  ASSIGNMENT:   "👨‍🔧",
-  RESOLUTION:   "✅",
-  REJECTION:    "❌",
-  CREATION:     "📋",
-  COMMENT:      "💬",
-  ATTACHMENT:   "📎",
+  ASSIGNMENT: "👨‍🔧",
+  RESOLUTION: "✅",
+  REJECTION: "❌",
+  CREATION: "📋",
+  COMMENT: "💬",
+  ATTACHMENT: "📎",
 };
 
 export default function TicketDetail({ ticketId, onBack, hideBack = false }) {
   const { getTicketById, loading } = useTickets();
+  const { user, isAdmin, isTechnician } = useAuth(); 
 
-  const [ticket, setTicket]   = useState(null);
+  const [ticket, setTicket] = useState(null);
   const [activeImg, setActiveImg] = useState(null);
 
   useEffect(() => {
@@ -84,9 +86,9 @@ export default function TicketDetail({ ticketId, onBack, hideBack = false }) {
         <p className="mt-4 text-gray-700 text-sm leading-relaxed">{ticket.description}</p>
 
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-gray-500">
-          <InfoChip label="Priority"  value={ticket.priority} />
-          <InfoChip label="Reporter"  value={ticket.reportedByName} />
-          <InfoChip label="Contact"   value={ticket.contactDetails} />
+          <InfoChip label="Priority" value={ticket.priority} />
+          <InfoChip label="Reporter" value={ticket.reportedByName} />
+          <InfoChip label="Contact" value={ticket.contactDetails} />
           <InfoChip label="Technician" value={ticket.assignedTechnicianName || "Unassigned"} />
         </div>
 
@@ -97,9 +99,10 @@ export default function TicketDetail({ ticketId, onBack, hideBack = false }) {
             <div className="flex gap-2 flex-wrap">
               {ticket.attachmentUrls.map((url, i) => {
                 // Handle both Cloudinary URLs (full URLs) and local file paths
-                const imageUrl = url.startsWith('http://') || url.startsWith('https://') 
-                  ? url 
-                  : `http://localhost:8080${url}`;
+                const imageUrl = url.startsWith('http://') || url.startsWith('https://')
+                  ? url
+                  : `${API_ORIGIN}${url}`;
+
                 return (
                   <img
                     key={i} src={imageUrl} alt=""
@@ -128,16 +131,16 @@ export default function TicketDetail({ ticketId, onBack, hideBack = false }) {
       {ticket && (() => {
         // Get latest activity safely
         if (!ticket.activities || ticket.activities.length === 0) return null;
-        
+
         const sortedActivities = [...ticket.activities].sort((a, b) => {
           const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
           const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
           return timeB - timeA;
         });
-        
+
         const latestActivity = sortedActivities[0];
         if (!latestActivity) return null;
-        
+
         const formatUpdateTime = (timestamp) => {
           if (!timestamp) return "";
           const date = new Date(timestamp);
@@ -155,7 +158,7 @@ export default function TicketDetail({ ticketId, onBack, hideBack = false }) {
                 <h3 className="font-semibold text-gray-800 text-sm mb-2">
                   Latest Update
                 </h3>
-                
+
                 <div className="space-y-2">
                   {/* Activity Title */}
                   <div>
@@ -229,7 +232,15 @@ export default function TicketDetail({ ticketId, onBack, hideBack = false }) {
 
       {/* Comments */}
       <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <CommentSection ticket={ticket} onUpdate={setTicket} />
+        <CommentSection 
+          ticket={ticket} 
+          onUpdate={setTicket} 
+          currentUser={{
+            id: user?.id || 'unknown',
+            name: user?.name || 'User',
+            role: isAdmin() ? 'ADMIN' : isTechnician() ? 'TECHNICIAN' : 'USER'
+          }}
+        />      
       </div>
 
       {/* Lightbox */}
@@ -239,9 +250,9 @@ export default function TicketDetail({ ticketId, onBack, hideBack = false }) {
           className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 cursor-pointer"
         >
           {(() => {
-            const imageUrl = activeImg.startsWith('http://') || activeImg.startsWith('https://') 
-              ? activeImg 
-              : `http://localhost:8080${activeImg}`;
+            const imageUrl = activeImg.startsWith('http://') || activeImg.startsWith('https://')
+              ? activeImg
+              : `${API_ORIGIN}${activeImg}`;
             return <img src={imageUrl} alt="" className="max-w-2xl max-h-[80vh] rounded-xl" />;
           })()}
         </div>
@@ -258,3 +269,5 @@ function InfoChip({ label, value }) {
     </div>
   );
 }
+
+export const API_ORIGIN = 'http://localhost:8081';

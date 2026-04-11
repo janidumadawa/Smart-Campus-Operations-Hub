@@ -1,6 +1,9 @@
+// frontend/src/pages/admin/ResourceManagement.jsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
+import axiosInstance from '../../utils/axiosConfig';
 import ResourceFilters from '../../components/admin/ResourceManagement/ResourceFilters';
 import ResourceTable from '../../components/admin/ResourceManagement/ResourceTable';
 import ResourceModal from '../../components/admin/ResourceManagement/ResourceModal';
@@ -20,25 +23,22 @@ const ResourceManagement = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [pageSize] = useState(10);
 
-  const API_BASE_URL = 'http://localhost:8080/resources';
-
+  const { isAdmin } = useAuth();
+  
   const fetchResources = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
+      const params = {
         page: currentPage,
         size: pageSize,
         ...(filterType && { type: filterType }),
         ...(filterStatus && { status: filterStatus }),
         ...(searchTerm && { location: searchTerm })
-      });
+      };
 
-      const response = await fetch(`${API_BASE_URL}?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch resources');
-
-      const data = await response.json();
-      setResources(data.content || []);
-      setTotalPages(data.totalPages || 0);
+      const response = await axiosInstance.get('/resources', { params });
+      setResources(response.data.content || []);
+      setTotalPages(response.data.totalPages || 0);
     } catch (error) {
       console.error('Error fetching resources:', error);
       toast.error('Failed to load resources');
@@ -61,16 +61,11 @@ const ResourceManagement = () => {
 
   const handleToggleStatus = async (resource) => {
     const newStatus = resource.status === 'AVAILABLE' ? 'OUT_OF_SERVICE' : 'AVAILABLE';
-
     try {
-      const response = await fetch(`${API_BASE_URL}/${resource.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...resource, status: newStatus })
+      await axiosInstance.put(`/resources/${resource.id}`, {
+        ...resource,
+        status: newStatus
       });
-
-      if (!response.ok) throw new Error('Failed to update status');
-
       toast.success('Status updated');
       fetchResources();
     } catch (error) {
@@ -81,11 +76,8 @@ const ResourceManagement = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this resource?')) return;
-
     try {
-      const response = await fetch(`${API_BASE_URL}/${id}`, { method: 'DELETE' });
-      if (!response.ok) throw new Error('Failed to delete resource');
-
+      await axiosInstance.delete(`/resources/${id}`);
       toast.success('Resource deleted');
       fetchResources();
     } catch (error) {
@@ -106,6 +98,7 @@ const ResourceManagement = () => {
           <h1 className="text-2xl font-bold text-[#0A2342]">Resource Management</h1>
           <p className="text-gray-600 mt-1">Manage campus facilities and equipment</p>
         </div>
+        {isAdmin() && (
         <button
           onClick={() => {
             setEditingResource(null);
@@ -116,6 +109,7 @@ const ResourceManagement = () => {
           <Plus className="w-4 h-4" />
           Add Resource
         </button>
+      )}
       </div>
 
       <ResourceFilters
@@ -141,6 +135,8 @@ const ResourceManagement = () => {
         onDelete={handleDelete}
         onToggleStatus={handleToggleStatus}
         onView={handleView}
+        isAdmin={isAdmin()} 
+
       />
 
       <ResourceModal
@@ -148,7 +144,6 @@ const ResourceManagement = () => {
         onClose={() => setShowModal(false)}
         onSuccess={fetchResources}
         editingResource={editingResource}
-        apiBaseUrl={API_BASE_URL}
       />
 
       <ResourceDetailsModal

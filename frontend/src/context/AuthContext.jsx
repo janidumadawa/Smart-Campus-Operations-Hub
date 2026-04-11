@@ -1,70 +1,97 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+// frontend/src/context/AuthContext.jsx
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import axiosInstance from '../utils/axiosConfig';
+import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
 
+export const useAuth = () => useContext(AuthContext);
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem("campusflow-user");
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(localStorage.getItem('token'));
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem("campusflow-user", JSON.stringify(user));
+    if (token) {
+      fetchUser();
     } else {
-      localStorage.removeItem("campusflow-user");
+      setLoading(false);
     }
-  }, [user]);
+  }, [token]);
 
-  const login = (email, password) => {
-    const savedUsers = JSON.parse(localStorage.getItem("campusflow-users")) || [];
-
-    const foundUser = savedUsers.find(
-      (item) => item.email === email && item.password === password
-    );
-
-    if (!foundUser) {
-      return { success: false, message: "Invalid email or password." };
+  const fetchUser = async () => {
+    try {
+      const response = await axiosInstance.get('/auth/me');
+      setUser(response.data);
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+      logout();
+    } finally {
+      setLoading(false);
     }
-
-    setUser(foundUser);
-    return { success: true };
   };
 
-  const register = (formData) => {
-    const savedUsers = JSON.parse(localStorage.getItem("campusflow-users")) || [];
-
-    const alreadyExists = savedUsers.find(
-      (item) => item.email === formData.email
-    );
-
-    if (alreadyExists) {
-      return { success: false, message: "Email already registered." };
+  const login = async (email, password) => {
+    try {
+      const response = await axiosInstance.post('/auth/login', { email, password });
+      const { token, id, email: userEmail, name, roles } = response.data;
+      
+      localStorage.setItem('token', token);
+      localStorage.setItem('userId', id);
+      setToken(token);
+      
+      const userData = { id, email: userEmail, name, roles };
+      setUser(userData);
+      
+      toast.success('Login successful! Redirecting...', { icon: '🎉', duration: 2000 });
+      
+      if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_TECHNICIAN')) {
+        return { success: true, redirect: '/admin' };
+      } else {
+        return { success: true, redirect: '/' };
+      }
+    } catch (error) {
+      console.error('Login failed:', error);
+      toast.error(error.response?.data?.message || 'Invalid credentials');
+      return { success: false, error: error.response?.data || 'Login failed' };
     }
+  };
 
-    const newUser = {
-      id: Date.now(),
-      fullName: formData.fullName,
-      email: formData.email,
-      password: formData.password,
-      role: formData.role || "USER",
-    };
-
-    const updatedUsers = [...savedUsers, newUser];
-    localStorage.setItem("campusflow-users", JSON.stringify(updatedUsers));
-
-    return { success: true, user: newUser };
+  const register = async (name, email, password) => {
+    try {
+      await axiosInstance.post('/auth/register', { name, email, password, roles: ['user'] });
+      toast.success('Account created successfully! Please login.', { icon: '🎉', duration: 2200 });
+      return { success: true };
+    } catch (error) {
+      console.error('Registration failed:', error);
+      toast.error(error.response?.data || 'Registration failed');
+      return { success: false, error: error.response?.data || 'Registration failed' };
+    }
   };
 
   const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    setToken(null);
     setUser(null);
+    toast.success('Logged out successfully');
   };
 
-  return (
-    <AuthContext.Provider value={{ user, setUser, login, register, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
+  const hasRole = (role) => user?.roles?.includes(role) || false;
+  const isAdmin = () => hasRole('ROLE_ADMIN');
+  const isTechnician = () => hasRole('ROLE_TECHNICIAN');
+  const isUser = () => hasRole('ROLE_USER');
+  
+  const getUserInitial = () => {
+    if (!user?.name) return 'U';
+    return user.name.charAt(0).toUpperCase();
+  };
 
-export const useAuth = () => useContext(AuthContext);
+  const value = {
+    user, loading, token, login, register, logout,
+    hasRole, isAdmin, isTechnician, isUser, getUserInitial
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};

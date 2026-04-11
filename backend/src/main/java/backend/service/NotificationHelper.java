@@ -14,8 +14,23 @@ public class NotificationHelper {
 
     @Autowired
     private NotificationService notificationService;
+    
+    @Autowired
+    private backend.repository.UserRepository userRepository;
 
     // ===== BOOKING NOTIFICATIONS =====
+    
+    public void triggerBookingRequested(String userId, String bookingId, String resourceName) {
+        notificationService.createNotification(
+            userId,
+            NotificationType.BOOKING_REQUESTED, // Use requested status
+            NotificationCategory.BOOKING,
+            "Booking Requested",
+            "Your booking for " + resourceName + " has been received and is pending review.",
+            bookingId,
+            "BOOKING"
+        );
+    }
 
     public void triggerBookingApproved(String userId, String bookingId, String resourceName) {
         notificationService.createNotification(
@@ -150,6 +165,45 @@ public class NotificationHelper {
             replierName + " replied to your comment on " + resourceType.toLowerCase() + ".",
             resourceId,
             resourceType
+        );
+    }
+
+
+    // ===== BROADCAST UTILS =====
+    
+    private void notifyAllAdmins(NotificationType type, NotificationCategory category, String title, String message, String resourceId, String resourceType) {
+        userRepository.findByRolesContains(backend.enums.Role.ROLE_ADMIN).forEach(admin -> {
+            notificationService.createNotification(
+                admin.getId(),
+                type,
+                category,
+                title,
+                message,
+                resourceId,
+                resourceType
+            );
+        });
+    }
+
+    public void notifyAdminsOfNewBooking(String bookingId, String resourceName, String userName) {
+        notifyAllAdmins(
+            NotificationType.BOOKING_REQUESTED,
+            NotificationCategory.BOOKING,
+            "New Booking Request",
+            userName + " has requested a booking for " + resourceName + ".",
+            bookingId,
+            "BOOKING"
+        );
+    }
+
+    public void notifyAdminsOfNewTicket(String ticketId, String category, String userName) {
+        notifyAllAdmins(
+            NotificationType.TICKET_CREATED,
+            NotificationCategory.TICKET,
+            "New Ticket Submitted",
+            userName + " has submitted a new " + category + " ticket.",
+            ticketId,
+            "TICKET"
         );
     }
 }

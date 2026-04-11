@@ -1,14 +1,18 @@
+// src/pages/tickets/components/TicketForm.jsx
 import { useState, useEffect } from "react";
 import { useTickets } from "../hooks/useTickets";
+import { useAuth } from '../../../context/AuthContext';  
+
 
 // TODO: Replace with real authentication system
 // For now using mock user - integrate with your auth provider
-const MOCK_USER = { id: "user-001", name: "John Doe", role: "USER" };
+// const MOCK_USER = { id: "user-001", name: "John Doe", role: "USER" };
 
 const PRIORITIES  = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
 
 export default function TicketForm({ onSuccess, onCancel }) {
   const { createTicket, uploadAttachments, getAvailableResources, loading, error } = useTickets();
+  const { user } = useAuth(); 
 
   const [form, setForm] = useState({
     title: "", 
@@ -49,6 +53,7 @@ export default function TicketForm({ onSuccess, onCancel }) {
     fetchResources();
   }, [getAvailableResources]);
 
+
   // Handle resource selection and auto-fill fields
   const handleResourceChange = (e) => {
     const resourceId = e.target.value;
@@ -59,7 +64,6 @@ export default function TicketForm({ onSuccess, onCancel }) {
       setSelectedResource(selected);
       
       if (selected) {
-        // Auto-fill Type, Capacity, Location
         setForm((p) => ({ 
           ...p, 
           resourceType: selected.type || "",
@@ -74,7 +78,7 @@ export default function TicketForm({ onSuccess, onCancel }) {
     }
   };
 
-  const handleFiles = (e) => {
+ const handleFiles = (e) => {
     const selected = Array.from(e.target.files).slice(0, 3);
     setFiles(selected);
     setPreview(selected.map((f) => URL.createObjectURL(f)));
@@ -91,8 +95,8 @@ export default function TicketForm({ onSuccess, onCancel }) {
         resourceId: form.resourceId,
         location: form.location || form.resourceLocation,
         category: "",
-        reportedByUserId: MOCK_USER.id,
-        reportedByName:   MOCK_USER.name,
+        reportedByUserId: user?.id,       
+        reportedByName: user?.name,      
       });
       if (files.length > 0) {
         await uploadAttachments(ticket.id, files);

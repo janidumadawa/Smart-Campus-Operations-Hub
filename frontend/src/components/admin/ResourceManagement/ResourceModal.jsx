@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Upload, Image as ImageIcon } from 'lucide-react';
+import { X, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
+import axiosInstance from '../../../utils/axiosConfig';  // ADD THIS IMPORT
 
-const ResourceModal = ({ isOpen, onClose, onSuccess, editingResource, apiBaseUrl }) => {
+const ResourceModal = ({ isOpen, onClose, onSuccess, editingResource }) => {
+  // REMOVE apiBaseUrl from props
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -19,7 +21,7 @@ const ResourceModal = ({ isOpen, onClose, onSuccess, editingResource, apiBaseUrl
       setFormData({
         name: editingResource.name,
         type: editingResource.type,
-        capacity: editingResource.capacity.toString(),
+        capacity: editingResource.capacity?.toString() || '',
         location: editingResource.location,
         status: editingResource.status
       });
@@ -78,30 +80,29 @@ const ResourceModal = ({ isOpen, onClose, onSuccess, editingResource, apiBaseUrl
       formDataToSend.append('resource', new Blob([JSON.stringify(resourceData)], {
         type: 'application/json'
       }));
-      
+
       if (image) {
         formDataToSend.append('image', image);
       }
 
-      const url = editingResource
-        ? `${apiBaseUrl}/${editingResource.id}`
-        : apiBaseUrl;
-
-      const method = editingResource ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        body: formDataToSend
-      });
-
-      if (!response.ok) throw new Error('Failed to save resource');
+      // USE axiosInstance instead of fetch with apiBaseUrl
+      let response;
+      if (editingResource) {
+        response = await axiosInstance.put(`/resources/${editingResource.id}`, formDataToSend, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      } else {
+        response = await axiosInstance.post('/resources', formDataToSend, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      }
 
       toast.success(editingResource ? 'Resource updated' : 'Resource added');
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Error saving resource:', error);
-      toast.error('Failed to save resource');
+      toast.error(error.response?.data?.message || 'Failed to save resource');
     } finally {
       setUploading(false);
     }
