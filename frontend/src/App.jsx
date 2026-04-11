@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 import Home from './pages/Home';
 import './index.css';
 
@@ -28,6 +28,9 @@ import NotificationPage from './pages/admin/NotificationPage';
 import AdvancedFeatures from './pages/admin/AdvancedFeatures';
 import UserManagement from './pages/admin/UserManagement';
 
+import NotificationHistoryPage from './pages/NotificationHistoryPage';
+import NotificationPreferencesPage from './pages/NotificationPreferencesPage';
+
 const queryClient = new QueryClient();
 
 function App() {
@@ -37,8 +40,12 @@ function App() {
         <Router>
           <Toaster position="top-right" />
           <Routes>
+            {/* Public Routes */}
             <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
+            {/* Protected User Routes */}
             <Route path="/facilities" element={
               <ProtectedRoute>
                 <Facilities />
@@ -54,17 +61,14 @@ function App() {
                 <MyBookings />
               </ProtectedRoute>
             } />
-
-            {/* ✅ CHANGE THIS ROUTE */}
-            <Route path="/bookings/:id" element={
-              <ProtectedRoute>
-                <BookingDetails />
-              </ProtectedRoute>
-            } />
-
             <Route path="/bookings/confirmation" element={
               <ProtectedRoute>
                 <BookingConfirmation />
+              </ProtectedRoute>
+            } />
+            <Route path="/bookings/:id" element={
+              <ProtectedRoute>
+                <BookingDetails />
               </ProtectedRoute>
             } />
             <Route path="/tickets" element={
@@ -78,8 +82,17 @@ function App() {
               </ProtectedRoute>
             } />
 
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            {/* Notification Routes */}
+            <Route path="/notifications" element={
+              <ProtectedRoute>
+                <NotificationHistoryPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/notification-preferences" element={
+              <ProtectedRoute>
+                <NotificationPreferencesPage />
+              </ProtectedRoute>
+            } />
 
             {/* Admin Routes */}
             <Route path="/admin" element={

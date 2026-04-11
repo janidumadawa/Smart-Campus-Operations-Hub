@@ -3,7 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, Menu, User, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import AdminSideBar from '../components/admin/AdminSideBar';
-import NotificationPanel from '../components/admin/NotificationPanel';
+import NotificationPanel from '../components/shared/NotificationPanel';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);

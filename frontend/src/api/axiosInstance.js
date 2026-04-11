@@ -1,14 +1,15 @@
-// frontend/src/utils/axiosConfig.js
 import axios from 'axios';
 
-const instance = axios.create({
+const axiosInstance = axios.create({
   baseURL: 'http://localhost:8081/api',
+  timeout: 10000,
   headers: {
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+  },
 });
 
-instance.interceptors.request.use(
+// Interceptor to add auth token if available
+axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -16,22 +17,21 @@ instance.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-instance.interceptors.response.use(
+// Interceptor to handle errors
+axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      // Handle unauthorized - clear token and redirect to login
       localStorage.removeItem('token');
+      localStorage.removeItem('userId');
       window.location.href = '/login';
     }
     return Promise.reject(error);
   }
 );
 
-export default instance;
-
-export const API_ORIGIN = 'http://localhost:8081';
+export default axiosInstance;

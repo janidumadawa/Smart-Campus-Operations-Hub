@@ -231,6 +231,40 @@ const Dashboardpage = () => {
           </div>
         </div>
       </div>
+
+      {/* SYSTEM NOTIFICATIONS SECTION */}
+      <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-[#0A2342]">Recent System Activity</h2>
+          <Link to="/admin/notifications" className="text-sm text-[#F47C20] hover:text-[#E06A10]">Full Alerts History</Link>
+        </div>
+        <div className="p-6">
+           <p className="text-sm text-gray-500 mb-4">Check the notification bell in the top right for real-time alerts.</p>
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                 <h4 className="font-medium text-blue-900 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    New Bookings
+                 </h4>
+                 <p className="text-xs text-blue-700 mt-1">Visit Booking Management to approve pending requests.</p>
+              </div>
+              <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
+                 <h4 className="font-medium text-orange-900 flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Pending Tickets
+                 </h4>
+                 <p className="text-xs text-orange-700 mt-1">Respond to maintenance issues submitted by students.</p>
+              </div>
+              <div className="p-4 bg-green-50 rounded-lg border border-green-100">
+                 <h4 className="font-medium text-green-900 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    System Status
+                 </h4>
+                 <p className="text-xs text-green-700 mt-1">All services are currently operational.</p>
+              </div>
+           </div>
+        </div>
+      </div>
     </div>
   );
 };

@@ -3,6 +3,8 @@ package backend.config;
 import backend.enums.Role;
 import backend.model.User;
 import backend.repository.UserRepository;
+import backend.service.NotificationService;
+import backend.service.NotificationHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,6 +18,10 @@ public class DataInitializer implements CommandLineRunner {
     private UserRepository userRepository;
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private NotificationService notificationService;
+    @Autowired
+    private NotificationHelper notificationHelper;
 
     @Override
     public void run(String... args) throws Exception {
@@ -56,5 +62,68 @@ public class DataInitializer implements CommandLineRunner {
                 System.out.println("Technician created: " + tech[0] + " / " + tech[1]);
             }
         }
+
+        // Initialize Default Student
+        User student = userRepository.findByEmail("student@sliit.lk").orElse(null);
+        if (student == null) {
+            student = new User();
+            student.setEmail("student@sliit.lk");
+            student.setPassword(passwordEncoder.encode("Student@123"));
+            student.setName("Student User");
+            student.setProvider("local");
+            Set<Role> studentRoles = new HashSet<>();
+            studentRoles.add(Role.ROLE_USER);
+            student.setRoles(studentRoles);
+            student = userRepository.save(student);
+            System.out.println("Student user created: student@sliit.lk / Student@123");
+        }
+        
+        // Seed notifications for student and admin
+        User admin = userRepository.findByEmail("admin@sliit.lk").orElse(null);
+        
+        if (student != null) {
+            seedVivaNotifications(student.getId(), student.getEmail());
+        }
+        
+        if (admin != null) {
+            seedVivaNotifications(admin.getId(), admin.getEmail());
+        }
+
+        System.out.println("Data initialization complete!");
+    }
+
+    private void seedVivaNotifications(String userId, String email) {
+        // Welcome notification
+        notificationService.createNotification(
+            userId,
+            backend.enums.NotificationType.SYSTEM_ALERT,
+            backend.enums.NotificationCategory.SYSTEM,
+            "Welcome to CampusFlow!",
+            "Your account is set up and ready. We've optimized the notification system for your viva!",
+            null,
+            "SYSTEM"
+        );
+
+        // Security notification
+        notificationService.createNotification(
+            userId,
+            backend.enums.NotificationType.SYSTEM_ALERT,
+            backend.enums.NotificationCategory.SYSTEM,
+            "System Optimization Active",
+            "Real-time alerts for bookings and tickets are now fully synchronized with your dashboard.",
+            null,
+            "SYSTEM"
+        );
+        
+        // Also seed by email just in case the resolution is bypassed
+        notificationService.createNotification(
+            email,
+            backend.enums.NotificationType.SYSTEM_ALERT,
+            backend.enums.NotificationCategory.SYSTEM,
+            "Platform Ready",
+            "The Smart Campus Operations Hub is fully operational and synchronized.",
+            null,
+            "SYSTEM"
+        );
     }
 }

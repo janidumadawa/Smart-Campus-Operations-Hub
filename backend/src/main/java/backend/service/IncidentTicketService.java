@@ -25,6 +25,7 @@ public class IncidentTicketService {
 
     private final IncidentTicketRepository ticketRepository;
     private final CloudinaryService cloudinaryService;
+    private final NotificationHelper notificationHelper;
 
     @Value("${file.upload-dir:uploads/tickets}")
     private String uploadDir;
@@ -78,9 +79,12 @@ public class IncidentTicketService {
         creationActivity.setNewValue("OPEN");
         creationActivity.setTimestamp(LocalDateTime.now());
         
-        ticket.getActivities().add(creationActivity);
-        
-        return ticketRepository.save(ticket);
+        IncidentTicket saved = ticketRepository.save(ticket);
+
+        // Trigger notification
+        notificationHelper.triggerTicketCreated(saved.getReportedByUserId(), saved.getId(), saved.getCategory());
+
+        return saved;
     }
 
     // ─── IMAGE UPLOAD ─────────────────────────────────────────
@@ -267,9 +271,25 @@ public class IncidentTicketService {
         ticket.setUpdatedAt(LocalDateTime.now());
         
         // Log status change activity
-        logStatusChangeActivity(ticket, previousStatus, newStatus, req);
-        
-        return ticketRepository.save(ticket);
+        IncidentTicket saved = ticketRepository.save(ticket);
+
+        // Trigger notification
+        switch (newStatus) {
+            case "IN_PROGRESS":
+                notificationHelper.triggerTicketInProgress(saved.getReportedByUserId(), saved.getId());
+                break;
+            case "RESOLVED":
+                notificationHelper.triggerTicketResolved(saved.getReportedByUserId(), saved.getId(), saved.getResolutionNotes());
+                break;
+            case "REJECTED":
+                notificationHelper.triggerTicketRejected(saved.getReportedByUserId(), saved.getId(), saved.getRejectionReason());
+                break;
+            case "CLOSED":
+                notificationHelper.triggerTicketClosed(saved.getReportedByUserId(), saved.getId());
+                break;
+        }
+
+        return saved;
     }
 
     // ─── ASSIGN TECHNICIAN ────────────────────────────────────
@@ -325,7 +345,12 @@ public class IncidentTicketService {
             ticket.getActivities().add(statusChange);
         }
         
-        return ticketRepository.save(ticket);
+        IncidentTicket saved = ticketRepository.save(ticket);
+        
+        // Trigger notification
+        notificationHelper.triggerTicketAssigned(saved.getReportedByUserId(), saved.getId(), technicianName);
+        
+        return saved;
     }
 
     // ─── ACTIVITY LOGGING HELPER ──────────────────────────────
@@ -461,7 +486,19 @@ public class IncidentTicketService {
         activities.add(commentActivity);
         ticket.setActivities(activities);
         
-        return ticketRepository.save(ticket);
+        IncidentTicket saved = ticketRepository.save(ticket);
+        
+        // Trigger notification (only if the commenter is not the reporter)
+        if (!req.getAuthorId().equals(saved.getReportedByUserId())) {
+            notificationHelper.triggerCommentAdded(
+                saved.getReportedByUserId(), 
+                saved.getId(), 
+                req.getAuthorName(), 
+                "TICKET"
+            );
+        }
+        
+        return saved;
     }
 
     public IncidentTicket editComment(String ticketId, String commentId,

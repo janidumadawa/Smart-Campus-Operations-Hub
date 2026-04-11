@@ -9,6 +9,7 @@ import backend.model.Booking;
 import backend.model.Resource;
 import backend.repository.BookingRepository;
 import backend.repository.ResourceRepository;
+import backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,10 +20,23 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final ResourceRepository resourceRepository;
+    private final NotificationHelper notificationHelper;
+    private final UserRepository userRepository;
 
-    public BookingService(BookingRepository bookingRepository, ResourceRepository resourceRepository) {
+    public BookingService(BookingRepository bookingRepository, 
+                          ResourceRepository resourceRepository,
+                          NotificationHelper notificationHelper,
+                          UserRepository userRepository) {
         this.bookingRepository = bookingRepository;
         this.resourceRepository = resourceRepository;
+        this.notificationHelper = notificationHelper;
+        this.userRepository = userRepository;
+    }
+
+    private String getUserIdByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .map(backend.model.User::getId)
+                .orElse(null);
     }
 
     public Booking createBooking(BookingRequestDTO dto) {
@@ -62,7 +76,18 @@ public class BookingService {
         booking.setEmail(dto.getEmail());
         booking.setStatus(BookingStatus.PENDING);
 
-        return bookingRepository.save(booking);
+        Booking saved = bookingRepository.save(booking);
+        
+        // Trigger notification
+        String userId = getUserIdByEmail(saved.getEmail());
+        if (userId != null) {
+            notificationHelper.triggerBookingRequested(userId, saved.getId(), saved.getResourceName());
+        }
+        
+        // Notify Admins
+        notificationHelper.notifyAdminsOfNewBooking(saved.getId(), saved.getResourceName(), saved.getRequestedBy());
+        
+        return saved;
     }
 
     private boolean timeOverlaps(String start1, String end1, String start2, String end2) {
@@ -93,8 +118,19 @@ public class BookingService {
         if (review.getAdminReason() != null) {
             booking.setAdminReason(review.getAdminReason());
         }
-
-        return bookingRepository.save(booking);
+        Booking saved = bookingRepository.save(booking);
+        
+        // Trigger notification
+        String userId = getUserIdByEmail(saved.getEmail());
+        if (userId != null) {
+            if (saved.getStatus() == BookingStatus.APPROVED) {
+                notificationHelper.triggerBookingApproved(userId, saved.getId(), saved.getResourceName());
+            } else if (saved.getStatus() == BookingStatus.REJECTED) {
+                notificationHelper.triggerBookingRejected(userId, saved.getId(), saved.getResourceName(), saved.getAdminReason());
+            }
+        }
+        
+        return saved;
     }
 
     public Booking cancelBooking(String id, String email) {
@@ -111,6 +147,14 @@ public class BookingService {
         }
 
         booking.setStatus(BookingStatus.CANCELLED);
-        return bookingRepository.save(booking);
+        Booking saved = bookingRepository.save(booking);
+        
+        // Trigger notification
+        String userId = getUserIdByEmail(saved.getEmail());
+        if (userId != null) {
+            notificationHelper.triggerBookingCancelled(userId, saved.getId(), saved.getResourceName());
+        }
+        
+        return saved;
     }
 }

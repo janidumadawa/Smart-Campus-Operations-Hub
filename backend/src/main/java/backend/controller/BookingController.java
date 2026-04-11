@@ -16,7 +16,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/bookings")
-@CrossOrigin(originPatterns = "*", maxAge = 3600)
 public class BookingController {
 
     private final BookingService bookingService;

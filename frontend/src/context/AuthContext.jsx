@@ -38,6 +38,7 @@ export const AuthProvider = ({ children }) => {
       const { token, id, email: userEmail, name, roles } = response.data;
       
       localStorage.setItem('token', token);
+      localStorage.setItem('userId', id);
       setToken(token);
       
       const userData = { id, email: userEmail, name, roles };
@@ -71,6 +72,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('userId');
     setToken(null);
     setUser(null);
     toast.success('Logged out successfully');
