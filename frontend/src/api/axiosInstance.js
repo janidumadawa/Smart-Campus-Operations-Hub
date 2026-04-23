@@ -1,10 +1,7 @@
 import axios from 'axios';
 
-// API URL - Vercel will inject VITE_API_URL, fallback to Render URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://smart-campus-backend-v9eg.onrender.com/api';
-
 const axiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: 'https://smart-campus-backend-v9eg.onrender.com/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
