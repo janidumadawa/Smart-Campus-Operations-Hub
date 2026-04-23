@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const instance = axios.create({
-  baseURL: 'http://localhost:8081/api',
+  baseURL: 'https://smart-campus-backend-v9eg.onrender.com/api',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -34,4 +34,4 @@ instance.interceptors.response.use(
 
 export default instance;
 
-export const API_ORIGIN = 'http://localhost:8081';
+export const API_ORIGIN = 'https://smart-campus-backend-v9eg.onrender.com';
