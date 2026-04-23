@@ -141,5 +141,3 @@ docker-compose*.yml
 # Sensitive files - NEVER commit
 src/main/resources/application.properties
 .env
-
-# Allow Dockerfile for deployment
