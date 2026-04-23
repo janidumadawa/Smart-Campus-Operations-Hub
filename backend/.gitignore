@@ -138,3 +138,6 @@ docker-compose*.yml
 *.temp
 *.cache
 .cache/
+# Sensitive files - NEVER commit
+src/main/resources/application.properties
+.env
