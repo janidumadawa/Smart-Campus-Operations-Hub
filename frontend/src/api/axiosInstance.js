@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Use environment variable for API URL, fallback to localhost for development
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
+// API URL - Vercel will inject VITE_API_URL, fallback to Render URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://smart-campus-backend-v9eg.onrender.com/api';
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -11,7 +11,6 @@ const axiosInstance = axios.create({
   },
 });
 
-// Interceptor to add auth token if available
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -23,7 +22,6 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Interceptor to handle errors
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
