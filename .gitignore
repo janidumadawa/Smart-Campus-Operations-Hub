@@ -201,3 +201,4 @@ HELP.md
 # Sensitive backend files
 backend/src/main/resources/application.properties
 backend/.env
+render.yaml
