@@ -20,10 +20,10 @@ public interface NotificationRepository extends MongoRepository<Notification, St
     Page<Notification> findByRecipientIdOrderByCreatedAtDesc(String recipientId, Pageable pageable);
 
     // Find unread notifications for a user
-    List<Notification> findByRecipientIdAndReadFalseOrderByCreatedAtDesc(String recipientId);
+    List<Notification> findByRecipientIdAndIsReadFalseOrderByCreatedAtDesc(String recipientId);
 
     // Count unread notifications for a user
-    long countByRecipientIdAndReadFalse(String recipientId);
+    long countByRecipientIdAndIsReadFalse(String recipientId);
 
     // Find notifications by category
     List<Notification> findByRecipientIdAndCategoryOrderByCreatedAtDesc(String recipientId, NotificationCategory category);

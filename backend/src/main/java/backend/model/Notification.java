@@ -2,7 +2,6 @@ package backend.model;
 
 import backend.enums.NotificationCategory;
 import backend.enums.NotificationType;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -23,7 +22,7 @@ public class Notification {
     private String relatedResourceId;  // Booking ID, Ticket ID, etc.
     private String relatedResourceType; // BOOKING, TICKET
     private LocalDateTime createdAt;
-    private boolean read;
+    private boolean isRead;
     private boolean emailSent;
 
     // Constructors
@@ -39,7 +38,7 @@ public class Notification {
         this.relatedResourceId = relatedResourceId;
         this.relatedResourceType = relatedResourceType;
         this.createdAt = LocalDateTime.now();
-        this.read = false;
+        this.isRead = false;
         this.emailSent = false;
     }
 
@@ -124,14 +123,12 @@ public class Notification {
         this.createdAt = createdAt;
     }
 
-    @JsonProperty("read")
     public boolean isRead() {
-        return read;
+        return isRead;
     }
 
-    @JsonProperty("read")
     public void setRead(boolean read) {
-        this.read = read;
+        isRead = read;
     }
 
     public boolean isEmailSent() {

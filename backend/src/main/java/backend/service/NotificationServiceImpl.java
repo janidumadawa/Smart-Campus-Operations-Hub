@@ -6,7 +6,6 @@ import backend.model.Notification;
 import backend.model.NotificationPreference;
 import backend.repository.NotificationRepository;
 import backend.repository.NotificationPreferenceRepository;
-import backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,9 +29,6 @@ public class NotificationServiceImpl implements NotificationService {
     @Autowired
     private NotificationPreferenceRepository preferenceRepository;
 
-    @Autowired
-    private UserRepository userRepository;
-
     @Autowired(required = false)
     private JavaMailSender mailSender;
 
@@ -43,16 +39,13 @@ public class NotificationServiceImpl implements NotificationService {
     public Notification createNotification(String recipientId, NotificationType type, NotificationCategory category,
                                           String title, String message, String relatedResourceId, String relatedResourceType) {
         
-        // Resolve ID if email is provided
-        final String resolvedId = resolveRecipientId(recipientId);
-        
         // Check if user has enabled notifications for this category
-        if (!isNotificationEnabledForUser(resolvedId, category)) {
-            logger.info("Notification skipped: User " + resolvedId + " has disabled " + category + " notifications");
+        if (!isNotificationEnabledForUser(recipientId, category)) {
+            logger.info("Notification skipped: User " + recipientId + " has disabled " + category + " notifications");
             return null;
         }
 
-        Notification notification = new Notification(resolvedId, type, category, title, message, relatedResourceId, relatedResourceType);
+        Notification notification = new Notification(recipientId, type, category, title, message, relatedResourceId, relatedResourceType);
         Notification savedNotification = notificationRepository.save(notification);
         
         logger.info("Notification created: " + savedNotification.getId());
@@ -72,7 +65,7 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Override
     public Page<Notification> getUserNotifications(String userId, Pageable pageable) {
-        return notificationRepository.findByRecipientIdOrderByCreatedAtDesc(resolveRecipientId(userId), pageable);
+        return notificationRepository.findByRecipientIdOrderByCreatedAtDesc(userId, pageable);
     }
 
     /**
@@ -80,7 +73,7 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Override
     public long getUnreadCount(String userId) {
-        return notificationRepository.countByRecipientIdAndReadFalse(resolveRecipientId(userId));
+        return notificationRepository.countByRecipientIdAndIsReadFalse(userId);
     }
 
     /**
@@ -88,7 +81,7 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Override
     public List<Notification> getUnreadNotifications(String userId) {
-        return notificationRepository.findByRecipientIdAndReadFalseOrderByCreatedAtDesc(resolveRecipientId(userId));
+        return notificationRepository.findByRecipientIdAndIsReadFalseOrderByCreatedAtDesc(userId);
     }
 
     /**
@@ -110,7 +103,7 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Override
     public void markAllAsRead(String userId) {
-        List<Notification> unreadNotifications = getUnreadNotifications(resolveRecipientId(userId));
+        List<Notification> unreadNotifications = getUnreadNotifications(userId);
         unreadNotifications.forEach(n -> n.setRead(true));
         notificationRepository.saveAll(unreadNotifications);
     }
@@ -134,7 +127,7 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Override
     public List<Notification> getNotificationsByCategory(String userId, NotificationCategory category) {
-        return notificationRepository.findByRecipientIdAndCategoryOrderByCreatedAtDesc(resolveRecipientId(userId), category);
+        return notificationRepository.findByRecipientIdAndCategoryOrderByCreatedAtDesc(userId, category);
     }
 
     /**
@@ -159,13 +152,12 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Override
     public NotificationPreference getOrCreatePreferences(String userId) {
-        String resolvedId = resolveRecipientId(userId);
-        Optional<NotificationPreference> existing = preferenceRepository.findByUserId(resolvedId);
+        Optional<NotificationPreference> existing = preferenceRepository.findByUserId(userId);
         if (existing.isPresent()) {
             return existing.get();
         }
         
-        NotificationPreference newPreference = new NotificationPreference(resolvedId);
+        NotificationPreference newPreference = new NotificationPreference(userId);
         return preferenceRepository.save(newPreference);
     }
 
@@ -176,19 +168,12 @@ public class NotificationServiceImpl implements NotificationService {
     public NotificationPreference updatePreferences(String userId, NotificationPreference preferences) {
         NotificationPreference existing = getOrCreatePreferences(userId);
         
-        // Ensure userId is preserved and correct
-        existing.setUserId(userId);
         existing.setBookingAlerts(preferences.isBookingAlerts());
         existing.setTicketUpdates(preferences.isTicketUpdates());
         existing.setEmailNotifications(preferences.isEmailNotifications());
         existing.setCommentNotifications(preferences.isCommentNotifications());
         
-        try {
-            return preferenceRepository.save(existing);
-        } catch (Exception e) {
-            logger.severe("Failed to save preferences for user " + userId + ": " + e.getMessage());
-            throw new RuntimeException("Could not save preferences: " + e.getMessage());
-        }
+        return preferenceRepository.save(existing);
     }
 
     /**
@@ -276,22 +261,9 @@ public class NotificationServiceImpl implements NotificationService {
      * Placeholder: Get email for user (integrate with User entity later)
      */
     private String getEmailForUser(String userId) {
-        return userRepository.findById(userId)
-                .map(backend.model.User::getEmail)
-                .orElse(null);
-    }
-
-    /**
-     * Resolve userId from email if necessary
-     */
-    private String resolveRecipientId(String userId) {
-        if (userId == null) return null;
-        if (userId.contains("@")) {
-            return userRepository.findByEmail(userId)
-                    .map(backend.model.User::getId)
-                    .orElse(userId); // Fallback to email if user not found (unlikely)
-        }
-        return userId;
+        // TODO: Implement user lookup to get email
+        // This depends on how your User entity is structured
+        return null;
     }
 
     /**
